@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hello World</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      body {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <script src="pixi/pixi.min.js"></script>
+  <body>
+    <button id="go">Go</button>
+    <script type="text/javascript">
+      let type = "WebGL";
+      if (!PIXI.utils.isWebGLSupported()) {
+        type = "canvas";
+      }
+
+      PIXI.utils.sayHello(type);
+
+      function getRandomWholeNumber(min, max) {
+        return Math.floor(Math.random() * max) + min;
+      }
+
+      function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
+        const x = x2 - x1;
+        const y = y2 - y1;
+
+        return {
+          distance: Math.sqrt(x * x + y * y),
+          angle: (Math.atan2(y, x) * 180) / Math.PI
+        };
+      }
+
+      function Vector(magnitude, angle) {
+        var angleRadians = (angle * Math.PI) / 180;
+
+        this.magnitudeX = magnitude * Math.cos(angleRadians);
+        this.magnitudeY = magnitude * Math.sin(angleRadians);
+      }
+
+      function generateFleet() {
+        const fleet = new Array(250).fill(undefined).map((value, index) => {
+          const origin = {
+            x: getRandomWholeNumber(0, width),
+            y: getRandomWholeNumber(0, height)
+          };
+          let destination = {
+            x: getRandomWholeNumber(0, width),
+            y: getRandomWholeNumber(0, height)
+          };
+          return {
+            name: `SHIP-${index}`,
+            origin,
+            destination,
+            direction: origin.x > destination.x ? "west" : "east",
+            directionY: origin.y > destination.y ? "north" : "south",
+            coordinates: origin,
+            // id: uuid(),
+            status: "STD",
+            velocity: 100,
+            radius: {
+              base: 3,
+              hover: 10,
+              selected: 6
+            },
+            maxVelocity: 10,
+            prepTime: 10,
+            scanning: {
+              active: false,
+              startingRadius: 1,
+              currentRadius: 1,
+              endRadius: 200,
+              speed: 0.5
+            },
+            acceleration: 10,
+            deceleration: 10,
+            travelling: true,
+            stopping: false,
+            launchTime: 0,
+            onApproach: false,
+            distanceToDestination: distanceAndAngleBetweenTwoPoints(
+              origin.x,
+              origin.y,
+              destination.x,
+              destination.y
+            ).distance
+          };
+        });
+        return fleet;
+      }
+
+      //Aliases
+      let Application = PIXI.Application,
+        loader = PIXI.loader,
+        resources = PIXI.loader.resources,
+        Sprite = PIXI.Sprite,
+        Graphics = PIXI.Graphics,
+        Text = PIXI.Text;
+
+      //Create a Pixi Application
+      let app = new Application({
+        width: 512,
+        height: 512,
+        antialias: true,
+        transparent: false,
+        resolution: 1
+      });
+
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+
+      app.renderer.view.style.position = "absolute";
+      app.renderer.view.style.display = "block";
+      app.renderer.autoResize = true;
+      app.renderer.resize(width, height);
+
+      //Add the canvas that Pixi automatically created for you to the HTML document
+      document.body.appendChild(app.view);
+
+      const canvasPos = {
+        x: app.view.offsetLeft,
+        y: app.view.offsetTop
+      };
+      //load an image and run the `setup` function when it's done
+      loader
+        .add([
+          "assets/sprites/ship.png",
+          "assets/sprites/ship-selected.png",
+          "assets/sprites/ship-selection-ring.png"
+        ])
+        .load(setup);
+
+      let spaceship;
+      let spaceshipSelected;
+      let selectionRing;
+      let fleet;
+      let superFastSprites = new PIXI.particles.ParticleContainer();
+      let graphics;
+
+      function getTravelData(ship, milliseconds) {
+        const travelData = {};
+        travelData.distanceAndAngle = distanceAndAngleBetweenTwoPoints(
+          ship.coordinates.x,
+          ship.coordinates.y,
+          ship.destination.x,
+          ship.destination.y
+        );
+        travelData.shipVector = new Vector(
+          ship.velocity,
+          travelData.distanceAndAngle.angle
+        );
+        travelData.elapsedSeconds = milliseconds / 1000;
+        return travelData;
+      }
+      function go() {
+        fleet.forEach(ship => {
+          ship.travelling = !ship.travelling;
+        });
+      }
+      let mouse;
+      let selectedShip;
+      //This `setup` function will run when the image has loaded
+      function setup() {
+        app.view.addEventListener("mousemove", function(event) {
+          const bounds = event.target.getBoundingClientRect();
+          const newMouse = {
+            x: event.x - bounds.left,
+            y: event.y - bounds.top
+          };
+          mouse = newMouse;
+        });
+        app.view.addEventListener("click", function(event) {
+          const bounds = event.target.getBoundingClientRect();
+          const clickCoords = {
+            x: event.x - bounds.left,
+            y: event.y - bounds.top
+          };
+          const clickedShip = fleet.filter(ship => {
+            return checkProximity(5, clickCoords, ship.coordinates);
+          })[0];
+          if (clickedShip) {
+            console.log(clickedShip);
+            selectedShip = clickedShip;
+          } else {
+            console.log("nunya");
+            selectedShip = undefined;
+          }
+        });
+
+        document.getElementById("go").addEventListener("click", () => {
+          go();
+        });
+
+        fleet = generateFleet();
+        fleet.forEach(ship => {
+          // ship.sprite = new Sprite(
+          //   resources["assets/sprites/ship.png"].texture
+          // );
+          ship.unselected = resources["assets/sprites/ship.png"].texture;
+          ship.selected = resources["assets/sprites/ship-selected.png"].texture;
+          ship.selection = new Sprite(
+            resources["assets/sprites/ship-selection-ring.png"].texture
+          );
+
+          ship.sprite = new Sprite();
+
+          ship.sprite.texture = ship.unselected;
+
+          // superFastSprites.addChild(ship.sprite);
+          app.stage.addChild(ship.sprite);
+        });
+        // app.stage.addChild(superFastSprites);
+
+        //Set the game state
+        state = play;
+
+        //Start the game loop
+        app.ticker.add(delta => gameLoop(delta));
+      }
+
+      function gameLoop(delta) {
+        //Update the current game state:
+        state(delta);
+      }
+
+      let style = new PIXI.TextStyle({
+        fontFamily: "Arial",
+        fontSize: 20,
+        fill: "white"
+      });
+
+      function checkProximity(distance, origin, target) {
+        if (
+          origin.x - target.x < distance &&
+          origin.x - target.x > distance * -1 &&
+          origin.y - target.y < distance &&
+          origin.y - target.y > distance * -1
+        ) {
+          return true;
+        }
+        return false;
+      }
+
+      function play(delta) {
+        fleet.forEach((ship, index) => {
+          if (ship.travelling) {
+            const travelData = getTravelData(ship, delta);
+            const distanceToDestination = travelData.distanceAndAngle.distance;
+            ship.distanceToDestination = distanceToDestination;
+            if (ship.distanceToDestination < 10) {
+              ship.origin = ship.coordinates;
+              ship.scan = {
+                sRad: 0,
+                eRad: 100,
+                cRad: 0,
+                step: 5,
+                coords: ship.coordinates
+              };
+              ship.destination = {
+                x: getRandomWholeNumber(0, width),
+                y: getRandomWholeNumber(0, height)
+              };
+            }
+            const newShipX =
+              ship.coordinates.x +
+              travelData.shipVector.magnitudeX * travelData.elapsedSeconds;
+            const newShipY =
+              ship.coordinates.y +
+              travelData.shipVector.magnitudeY * travelData.elapsedSeconds;
+
+            ship.coordinates = { x: newShipX, y: newShipY };
+
+            if (mouse && checkProximity(5, ship.coordinates, mouse)) {
+              ship.sprite.height = 20;
+              ship.sprite.width = 20;
+              ship.sprite.x = newShipX - 10;
+              ship.sprite.y = newShipY - 10;
+            } else {
+              ship.sprite.height = 6;
+              ship.sprite.width = 6;
+              ship.sprite.x = newShipX - 3;
+              ship.sprite.y = newShipY - 3;
+            }
+
+            if (selectedShip && ship.name === selectedShip.name) {
+              ship.sprite.texture = ship.selected;
+              ship.sprite.height = 10;
+              ship.sprite.width = 10;
+              ship.sprite.x = newShipX - 5;
+              ship.sprite.y = newShipY - 5;
+              app.stage.removeChild(ship.selectCircle);
+              ship.selectCircle = new Graphics();
+              ship.selectCircle.lineStyle(2, 0xffffff, 1);
+              ship.selectCircle.drawCircle(
+                ship.coordinates.x,
+                ship.coordinates.y,
+                40
+              );
+              ship.selectCircle.endFill();
+              app.stage.addChild(ship.selectCircle);
+            } else {
+              ship.sprite.texture = ship.unselected;
+            }
+
+            if (index === 0) {
+              app.stage.removeChild(ship.line);
+              app.stage.removeChild(ship.message);
+              ship.message = new Text("SHIP", style);
+              ship.message.position.set(ship.coordinates.x, ship.coordinates.y);
+              app.stage.addChild(ship.message);
+              ship.line = new Graphics();
+              ship.line.lineStyle(2, 0xffffff, 1);
+              ship.line.moveTo(newShipX + 3, newShipY + 3);
+              ship.line.lineTo(ship.destination.x, ship.destination.y);
+              app.stage.addChild(ship.line);
+              if (ship.scan) {
+                app.stage.removeChild(ship.scanCircle);
+                ship.scanCircle = new Graphics();
+                ship.scanCircle.lineStyle(2, 0xffffff, 1);
+                ship.scanCircle.drawCircle(
+                  ship.scan.coords.x,
+                  ship.scan.coords.y,
+                  ship.scan.cRad
+                );
+                ship.scanCircle.endFill();
+                ship.scan.cRad += ship.scan.step;
+                if (ship.scan.cRad >= ship.scan.eRad) {
+                  app.stage.removeChild(ship.scanCircle);
+                  ship.scan = undefined;
+                } else {
+                  app.stage.addChild(ship.scanCircle);
+                }
+              }
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
