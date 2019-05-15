@@ -9,13 +9,41 @@
         margin: 0;
       }
       body {
-        overflow: hidden;
+        /* overflow: hidden; */
+      }
+      body::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(255, 255, 255, 0.05),
+          rgba(112, 255, 233, 0.05) 5px,
+          transparent 1px,
+          transparent 2px
+        );
+        z-index: 100000;
+        pointer-events: none;
+      }
+      canvas {
+        background-image: linear-gradient(
+            30deg,
+            rgba(57, 160, 237, 0.075),
+            rgba(255, 255, 255, 0.01)
+          ),
+          linear-gradient(
+            100deg,
+            rgba(100, 11, 40, 0.075),
+            rgba(94, 252, 141, 0.075)
+          );
       }
     </style>
   </head>
   <script src="pixi/pixi.min.js"></script>
   <body>
-    <button id="go">Go</button>
     <script type="text/javascript">
       let type = "WebGL";
       if (!PIXI.utils.isWebGLSupported()) {
@@ -113,13 +141,36 @@
         resolution: 1
       });
 
-      let width = window.innerWidth;
-      let height = window.innerHeight;
+      // let width = window.innerWidth;
+      // let height = window.innerHeight;
+
+      let width = 2000;
+      let height = 2000;
+
+      function generateUniverse(size, density) {
+        const stars = Math.floor((size * size) / density);
+        const starCoords = new Array(stars).fill(undefined).map(() => ({
+          x: getRandomWholeNumber(10, size),
+          y: getRandomWholeNumber(10, size)
+        }));
+        return starCoords;
+      }
 
       app.renderer.view.style.position = "absolute";
       app.renderer.view.style.display = "block";
       app.renderer.autoResize = true;
       app.renderer.resize(width, height);
+      // app.renderer.backgroundColor = 0x120114;
+      app.renderer.backgroundColor = `linear-gradient(
+            30deg,
+            rgba(57, 160, 237, 0.075),
+            rgba(255, 255, 255, 0.01)
+          ),
+          linear-gradient(
+            100deg,
+            rgba(100, 11, 40, 0.075),
+            rgba(94, 252, 141, 0.075)
+          );`;
 
       //Add the canvas that Pixi automatically created for you to the HTML document
       document.body.appendChild(app.view);
@@ -143,6 +194,7 @@
       let fleet;
       let superFastSprites = new PIXI.particles.ParticleContainer();
       let graphics;
+      let universe;
 
       function getTravelData(ship, milliseconds) {
         const travelData = {};
@@ -166,6 +218,24 @@
       }
       let mouse;
       let selectedShip;
+
+      function getStarRadius() {
+        const starSizes = [0.35, 0.6, 0.85, 1];
+        const random = Math.random();
+        if (random <= 0.3) {
+          return starSizes[0];
+        }
+        if (random > 0.3 && random <= 0.8) {
+          return starSizes[1];
+        }
+        if (random > 0.8 && random <= 0.95) {
+          return starSizes[2];
+        }
+        if (random > 0.95) {
+          return starSizes[3];
+        }
+      }
+
       //This `setup` function will run when the image has loaded
       function setup() {
         app.view.addEventListener("mousemove", function(event) {
@@ -186,23 +256,14 @@
             return checkProximity(5, clickCoords, ship.coordinates);
           })[0];
           if (clickedShip) {
-            console.log(clickedShip);
             selectedShip = clickedShip;
           } else {
-            console.log("nunya");
             selectedShip = undefined;
           }
         });
 
-        document.getElementById("go").addEventListener("click", () => {
-          go();
-        });
-
         fleet = generateFleet();
         fleet.forEach(ship => {
-          // ship.sprite = new Sprite(
-          //   resources["assets/sprites/ship.png"].texture
-          // );
           ship.unselected = resources["assets/sprites/ship.png"].texture;
           ship.selected = resources["assets/sprites/ship-selected.png"].texture;
           ship.selection = new Sprite(
@@ -210,13 +271,24 @@
           );
 
           ship.sprite = new Sprite();
-
           ship.sprite.texture = ship.unselected;
 
-          // superFastSprites.addChild(ship.sprite);
           app.stage.addChild(ship.sprite);
+          app.stage.addChild(ship.selection);
         });
-        // app.stage.addChild(superFastSprites);
+
+        universe = generateUniverse(width, 500);
+        universe.forEach(starCoordinate => {
+          let circle = new Graphics();
+          circle.beginFill(0xffffff);
+          circle.drawCircle(
+            starCoordinate.x,
+            starCoordinate.y,
+            getStarRadius()
+          );
+          circle.endFill();
+          app.stage.addChild(circle);
+        });
 
         //Set the game state
         state = play;
@@ -256,13 +328,6 @@
             ship.distanceToDestination = distanceToDestination;
             if (ship.distanceToDestination < 10) {
               ship.origin = ship.coordinates;
-              ship.scan = {
-                sRad: 0,
-                eRad: 100,
-                cRad: 0,
-                step: 5,
-                coords: ship.coordinates
-              };
               ship.destination = {
                 x: getRandomWholeNumber(0, width),
                 y: getRandomWholeNumber(0, height)
@@ -295,21 +360,10 @@
               ship.sprite.width = 10;
               ship.sprite.x = newShipX - 5;
               ship.sprite.y = newShipY - 5;
-              app.stage.removeChild(ship.selectCircle);
-              ship.selectCircle = new Graphics();
-              ship.selectCircle.lineStyle(2, 0xffffff, 1);
-              ship.selectCircle.drawCircle(
-                ship.coordinates.x,
-                ship.coordinates.y,
-                40
-              );
-              ship.selectCircle.endFill();
-              app.stage.addChild(ship.selectCircle);
-            } else {
-              ship.sprite.texture = ship.unselected;
-            }
+              ship.selection.x = newShipX - 5 - 15;
+              ship.selection.y = newShipY - 5 - 15;
+              ship.selection.visible = true;
 
-            if (index === 0) {
               app.stage.removeChild(ship.line);
               app.stage.removeChild(ship.message);
               ship.message = new Text("SHIP", style);
@@ -317,27 +371,14 @@
               app.stage.addChild(ship.message);
               ship.line = new Graphics();
               ship.line.lineStyle(2, 0xffffff, 1);
-              ship.line.moveTo(newShipX + 3, newShipY + 3);
+              ship.line.moveTo(newShipX, newShipY);
               ship.line.lineTo(ship.destination.x, ship.destination.y);
               app.stage.addChild(ship.line);
-              if (ship.scan) {
-                app.stage.removeChild(ship.scanCircle);
-                ship.scanCircle = new Graphics();
-                ship.scanCircle.lineStyle(2, 0xffffff, 1);
-                ship.scanCircle.drawCircle(
-                  ship.scan.coords.x,
-                  ship.scan.coords.y,
-                  ship.scan.cRad
-                );
-                ship.scanCircle.endFill();
-                ship.scan.cRad += ship.scan.step;
-                if (ship.scan.cRad >= ship.scan.eRad) {
-                  app.stage.removeChild(ship.scanCircle);
-                  ship.scan = undefined;
-                } else {
-                  app.stage.addChild(ship.scanCircle);
-                }
-              }
+            } else {
+              app.stage.removeChild(ship.line);
+              app.stage.removeChild(ship.message);
+              ship.sprite.texture = ship.unselected;
+              ship.selection.visible = false;
             }
           }
         });
