@@ -1,9 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link
+      href="https://fonts.googleapis.com/css?family=Inconsolata:400,700"
+      rel="stylesheet"
+    />
     <meta charset="utf-8" />
     <title>Hello World</title>
     <style>
+      /* @import url("https://fonts.googleapis.com/css?family=Inconsolata:400,700"); */
+      @font-face {
+        font-family: "Inconsolata";
+        src: url("https://fonts.googleapis.com/css?family=Inconsolata:400,700");
+      }
       * {
         padding: 0;
         margin: 0;
@@ -74,7 +83,7 @@
       }
 
       function generateFleet() {
-        const fleet = new Array(1000).fill(undefined).map((value, index) => {
+        const fleet = new Array(100).fill(undefined).map((value, index) => {
           const origin = {
             x: getRandomWholeNumber(0, width),
             y: getRandomWholeNumber(0, height)
@@ -100,6 +109,7 @@
             },
             maxVelocity: 10,
             prepTime: 10,
+            setSelected: false,
             scanning: {
               active: false,
               startingRadius: 1,
@@ -126,8 +136,8 @@
 
       //Aliases
       let Application = PIXI.Application,
-        loader = PIXI.loader,
-        resources = PIXI.loader.resources,
+        loader = PIXI.Loader.shared,
+        resources = PIXI.Loader.shared.resources,
         Sprite = PIXI.Sprite,
         Graphics = PIXI.Graphics,
         Text = PIXI.Text;
@@ -158,7 +168,7 @@
 
       // app.renderer.view.style.position = "absolute";
       // app.renderer.view.style.display = "block";
-      app.renderer.autoResize = true;
+      app.renderer.autoDensity = true;
       app.renderer.resize(width, height);
       // app.renderer.backgroundColor = 0x120114;
       app.renderer.backgroundColor = `linear-gradient(
@@ -251,7 +261,7 @@
       let spaceshipSelected;
       let selectionRing;
       let fleet;
-      let superFastSprites = new PIXI.particles.ParticleContainer();
+      let superFastSprites = new PIXI.ParticleContainer();
       let graphics;
       let universe;
 
@@ -369,14 +379,20 @@
           ship.destinationSprite.height = 10;
           ship.destinationSprite.width = 10;
 
+          ship.selection.visible = false;
+          ship.destinationSprite.visible = false;
+
           // assign starting sprite and starting texture
           ship.sprite = new Sprite();
           ship.sprite.texture = ship.unselected;
 
           // add message
           ship.message = new Text(`SHIP`, style);
+          ship.message.resolution = 2;
+          ship.message.visible = false;
 
           app.stage.addChild(ship.sprite);
+          app.stage.addChild(ship.message);
           app.stage.addChild(ship.selection);
           app.stage.addChild(ship.destinationSprite);
         });
@@ -407,8 +423,10 @@
       }
 
       let style = new PIXI.TextStyle({
-        fontFamily: "Arial",
-        fontSize: 20,
+        fontFamily: "Inconsolata",
+        letterSpacing: 1.5,
+        fontSize: 12,
+        fontWeight: 700,
         fill: "white"
       });
 
@@ -444,6 +462,8 @@
                 x: getRandomWholeNumber(0, width),
                 y: getRandomWholeNumber(0, height)
               };
+              ship.destinationSprite.x = ship.destination.x - 5;
+              ship.destinationSprite.y = ship.destination.y - 5;
             }
             const newShipX =
               ship.coordinates.x +
@@ -454,63 +474,85 @@
 
             ship.coordinates = { x: newShipX, y: newShipY };
 
+            // TODO: do this once
             if (mouse && checkProximity(5, ship.coordinates, mouse)) {
+              //TODO: Make a proper size texture so we're not setting size each time
               ship.sprite.height = 20;
               ship.sprite.width = 20;
+              //TODO: Make a proper size texture so we're not setting size each time
+
               ship.sprite.x = newShipX - 10;
               ship.sprite.y = newShipY - 10;
             } else {
+              //TODO: Make a proper size texture so we're not setting size each time
               ship.sprite.height = 6;
               ship.sprite.width = 6;
+              //TODO: Make a proper size texture so we're not setting size each time
+
               ship.sprite.x = newShipX - 3;
               ship.sprite.y = newShipY - 3;
             }
+            // TODO: do this once
 
+            if (!selectedShip) {
+              selectedShip = fleet[0];
+            }
             if (selectedShip && ship.name === selectedShip.name) {
+              // lock ship to view on each frame
               centerView(ship.coordinates);
-              // TODO: only do this the first time
-              // change sprite texture
-              ship.sprite.texture = ship.selected;
+              if (!ship.setSelected) {
+                ship.setSelected = true;
+                // change sprite texture
+                ship.sprite.texture = ship.selected;
+                // make the selection ring visible
+                ship.selection.visible = true;
+                ship.destinationSprite.visible = true;
+                ship.destinationSprite.x = ship.destination.x - 5;
+                ship.destinationSprite.y = ship.destination.y - 5;
+                // app.stage.addChild(ship.message);
+                ship.message.visible = true;
+              }
+
+              //TODO: Make a proper size texture so we're not setting size each time
               // change sprite size
               ship.sprite.height = 10;
               ship.sprite.width = 10;
-              // make the selection ring visible
-              ship.selection.visible = true;
-              ship.destinationSprite.visible = true;
-              // TODO: only do this the first time
+              //TODO: Make a proper size texture so we're not setting size each time
 
               // change sprite position
               ship.sprite.x = newShipX - 5;
               ship.sprite.y = newShipY - 5;
               ship.selection.x = newShipX - 20;
               ship.selection.y = newShipY - 20;
-              ship.destinationSprite.x = ship.destination.x - 5;
-              ship.destinationSprite.y = ship.destination.y - 5;
 
               // draw ship destination line and text
 
               // remove previous line and text
               app.stage.removeChild(ship.line);
-              app.stage.removeChild(ship.message);
+              // app.stage.removeChild(ship.message);
 
               // update ship message position and add to stage
-              ship.message.position.set(ship.coordinates.x, ship.coordinates.y);
-              app.stage.addChild(ship.message);
+              ship.message.position.set(
+                ship.coordinates.x + 25,
+                ship.coordinates.y - 3
+              );
 
               // add line primitive and add to stage
               ship.line = new Graphics();
-              ship.line.lineStyle(2, 0xffffff, 1);
+              ship.line.lineStyle(1, 0x70ffe9);
               ship.line.moveTo(newShipX, newShipY);
               ship.line.lineTo(ship.destination.x, ship.destination.y);
               app.stage.addChild(ship.line);
             } else {
-              // TODO: only do this the first time
-              app.stage.removeChild(ship.line);
-              app.stage.removeChild(ship.message);
-              ship.sprite.texture = ship.unselected;
-              ship.selection.visible = false;
-              ship.destinationSprite.visible = false;
-              // TODO: only do this the first time
+              if (ship.setSelected) {
+                ship.message.visible = false;
+                ship.setSelected = false;
+                app.stage.removeChild(ship.line);
+                app.stage.removeChild(ship.message);
+                ship.sprite.texture = ship.unselected;
+                ship.selection.visible = false;
+                ship.destinationSprite.visible = false;
+              }
             }
           }
         });
