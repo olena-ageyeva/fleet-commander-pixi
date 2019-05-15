@@ -9,9 +9,9 @@
         margin: 0;
       }
       body {
-        /* overflow: hidden; */
+        overflow: hidden;
       }
-      body::after {
+      /* body::after {
         content: "";
         position: absolute;
         top: 0;
@@ -27,24 +27,24 @@
         );
         z-index: 100000;
         pointer-events: none;
-      }
-      canvas {
-        background-image: linear-gradient(
-            30deg,
-            rgba(57, 160, 237, 0.075),
-            rgba(255, 255, 255, 0.01)
-          ),
-          linear-gradient(
-            100deg,
-            rgba(100, 11, 40, 0.075),
-            rgba(94, 252, 141, 0.075)
-          );
+      } */
+      #canvas__wrapper {
+        position: absolute;
+        /* top: 50px; */
+        /* transition: transform 250ms ease-out; */
       }
     </style>
   </head>
+  <script src="stats/stats.min.js"></script>
+
   <script src="pixi/pixi.min.js"></script>
   <body>
+    <div id="canvas__wrapper"></div>
     <script type="text/javascript">
+      var stats = new Stats();
+      stats.showPanel(0, 1, 2); // 0: fps, 1: ms, 2: mb, 3+: custom
+
+      document.body.appendChild(stats.dom);
       let type = "WebGL";
       if (!PIXI.utils.isWebGLSupported()) {
         type = "canvas";
@@ -74,7 +74,7 @@
       }
 
       function generateFleet() {
-        const fleet = new Array(250).fill(undefined).map((value, index) => {
+        const fleet = new Array(1000).fill(undefined).map((value, index) => {
           const origin = {
             x: getRandomWholeNumber(0, width),
             y: getRandomWholeNumber(0, height)
@@ -92,7 +92,7 @@
             coordinates: origin,
             // id: uuid(),
             status: "STD",
-            velocity: 100,
+            velocity: 1000,
             radius: {
               base: 3,
               hover: 10,
@@ -156,8 +156,8 @@
         return starCoords;
       }
 
-      app.renderer.view.style.position = "absolute";
-      app.renderer.view.style.display = "block";
+      // app.renderer.view.style.position = "absolute";
+      // app.renderer.view.style.display = "block";
       app.renderer.autoResize = true;
       app.renderer.resize(width, height);
       // app.renderer.backgroundColor = 0x120114;
@@ -173,12 +173,71 @@
           );`;
 
       //Add the canvas that Pixi automatically created for you to the HTML document
-      document.body.appendChild(app.view);
+      const canvasWrapper = document.getElementById("canvas__wrapper");
+      canvasWrapper.appendChild(app.view);
 
       const canvasPos = {
-        x: app.view.offsetLeft,
-        y: app.view.offsetTop
+        x: 0,
+        y: 0
       };
+
+      function keyboard(value) {
+        let key = {};
+        key.value = value;
+        key.isDown = false;
+        key.isUp = true;
+        key.press = undefined;
+        key.release = undefined;
+        //The `downHandler`
+        key.downHandler = event => {
+          if (event.key === key.value) {
+            if (key.isUp && key.press) key.press();
+            key.isDown = true;
+            key.isUp = false;
+            event.preventDefault();
+          }
+        };
+
+        //The `upHandler`
+        key.upHandler = event => {
+          if (event.key === key.value) {
+            if (key.isDown && key.release) key.release();
+            key.isDown = false;
+            key.isUp = true;
+            event.preventDefault();
+          }
+        };
+
+        //Attach event listeners
+        const downListener = key.downHandler.bind(key);
+        const upListener = key.upHandler.bind(key);
+
+        window.addEventListener("keydown", downListener, false);
+        window.addEventListener("keyup", upListener, false);
+
+        // Detach event listeners
+        key.unsubscribe = () => {
+          window.removeEventListener("keydown", downListener);
+          window.removeEventListener("keyup", upListener);
+        };
+
+        return key;
+      }
+
+      let translate = false;
+      let keyObject = keyboard("ArrowDown");
+
+      keyObject.press = () => {
+        //key object pressed'
+        console.log("down");
+        translate = true;
+      };
+      keyObject.release = () => {
+        //key object released
+        console.log("stop");
+        translate = false;
+      };
+
       //load an image and run the `setup` function when it's done
       loader
         .add([
@@ -236,6 +295,36 @@
         }
       }
 
+      function centerView(coordinates) {
+        const newX = (coordinates.x - window.innerWidth / 2) * -1;
+        const newY = (coordinates.y - window.innerHeight / 2) * -1;
+
+        const newMapPosition = {
+          x:
+            newX < 0 && newX > (2000 - window.innerWidth) * -1
+              ? newX + 4
+              : newX > 0
+              ? 0
+              : newX < (2000 - window.innerWidth) * -1
+              ? (2000 - window.innerWidth) * -1
+              : newX + 4,
+          y:
+            newY < 0 && newY > (2000 - window.innerHeight) * -1
+              ? newY
+              : newY > 0
+              ? 0
+              : newY < (2000 - window.innerHeight) * -1
+              ? (2000 - window.innerHeight) * -1
+              : newY
+        };
+
+        canvasPos.x = newMapPosition.x;
+        canvasPos.y = newMapPosition.y;
+        canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
+          canvasPos.y
+        }px)`;
+      }
+
       //This `setup` function will run when the image has loaded
       function setup() {
         app.view.addEventListener("mousemove", function(event) {
@@ -257,6 +346,7 @@
           })[0];
           if (clickedShip) {
             selectedShip = clickedShip;
+            centerView(clickedShip.coordinates);
           } else {
             selectedShip = undefined;
           }
@@ -264,17 +354,31 @@
 
         fleet = generateFleet();
         fleet.forEach(ship => {
+          // add textures
           ship.unselected = resources["assets/sprites/ship.png"].texture;
           ship.selected = resources["assets/sprites/ship-selected.png"].texture;
+
+          // add sprites
           ship.selection = new Sprite(
             resources["assets/sprites/ship-selection-ring.png"].texture
           );
+          ship.destinationSprite = new Sprite(
+            resources["assets/sprites/ship-selected.png"].texture
+          );
 
+          ship.destinationSprite.height = 10;
+          ship.destinationSprite.width = 10;
+
+          // assign starting sprite and starting texture
           ship.sprite = new Sprite();
           ship.sprite.texture = ship.unselected;
 
+          // add message
+          ship.message = new Text(`SHIP`, style);
+
           app.stage.addChild(ship.sprite);
           app.stage.addChild(ship.selection);
+          app.stage.addChild(ship.destinationSprite);
         });
 
         universe = generateUniverse(width, 500);
@@ -321,6 +425,14 @@
       }
 
       function play(delta) {
+        stats.begin();
+        if (translate) {
+          console.log("move it");
+          canvasPos.y -= 1;
+          canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
+            canvasPos.y
+          }px)`;
+        }
         fleet.forEach((ship, index) => {
           if (ship.travelling) {
             const travelData = getTravelData(ship, delta);
@@ -355,33 +467,54 @@
             }
 
             if (selectedShip && ship.name === selectedShip.name) {
+              centerView(ship.coordinates);
+              // TODO: only do this the first time
+              // change sprite texture
               ship.sprite.texture = ship.selected;
+              // change sprite size
               ship.sprite.height = 10;
               ship.sprite.width = 10;
+              // make the selection ring visible
+              ship.selection.visible = true;
+              ship.destinationSprite.visible = true;
+              // TODO: only do this the first time
+
+              // change sprite position
               ship.sprite.x = newShipX - 5;
               ship.sprite.y = newShipY - 5;
-              ship.selection.x = newShipX - 5 - 15;
-              ship.selection.y = newShipY - 5 - 15;
-              ship.selection.visible = true;
+              ship.selection.x = newShipX - 20;
+              ship.selection.y = newShipY - 20;
+              ship.destinationSprite.x = ship.destination.x - 5;
+              ship.destinationSprite.y = ship.destination.y - 5;
 
+              // draw ship destination line and text
+
+              // remove previous line and text
               app.stage.removeChild(ship.line);
               app.stage.removeChild(ship.message);
-              ship.message = new Text("SHIP", style);
+
+              // update ship message position and add to stage
               ship.message.position.set(ship.coordinates.x, ship.coordinates.y);
               app.stage.addChild(ship.message);
+
+              // add line primitive and add to stage
               ship.line = new Graphics();
               ship.line.lineStyle(2, 0xffffff, 1);
               ship.line.moveTo(newShipX, newShipY);
               ship.line.lineTo(ship.destination.x, ship.destination.y);
               app.stage.addChild(ship.line);
             } else {
+              // TODO: only do this the first time
               app.stage.removeChild(ship.line);
               app.stage.removeChild(ship.message);
               ship.sprite.texture = ship.unselected;
               ship.selection.visible = false;
+              ship.destinationSprite.visible = false;
+              // TODO: only do this the first time
             }
           }
         });
+        stats.end();
       }
     </script>
   </body>
