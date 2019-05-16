@@ -1,0 +1,226 @@
+@font-face {
+  font-family: "lovecraft";
+  src: local("lovecraft"),
+    url("./assets/fonts/lovecraft.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inconsolata";
+  src: url("./assets/fonts/Inconsolata-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Inconsolata";
+  src: url("./assets/fonts/Inconsolata-Regular.ttf") format("truetype");
+  font-weight: bold;
+}
+* {
+  box-sizing: border-box;
+  font-family: "Inconsolata", monospace;
+  letter-spacing: 2px;
+  margin: 0;
+  padding: 0;
+  -webkit-user-select: none; /* Safari 3.1+ */
+  -moz-user-select: none; /* Firefox 2+ */
+  -ms-user-select: none; /* IE 10+ */
+  user-select: none; /* Standard syntax */
+}
+body {
+  align-items: center;
+  background: #120114;
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  overflow: hidden;
+  width: 100vw;
+}
+body::after {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(112, 255, 233, 0.05) 5px,
+    transparent 1px,
+    transparent 2px
+  );
+  content: "";
+  height: 100vh;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 100;
+}
+.bordered {
+  border-radius: 1px;
+  border: 4px solid rgba(112, 255, 255, 0.9);
+  box-shadow: inset 0 0 10px rgba(112, 255, 255, 0.5),
+    0 0 10px rgba(112, 255, 255, 0.5);
+}
+.bordered--white {
+  border-radius: 1px;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.5);
+}
+.blue__glow {
+  color: rgba(112, 255, 255, 0.9);
+  text-shadow: 0px 0px 6px rgba(112, 255, 255, 0.8);
+}
+.white__glow {
+  color: #fff;
+  text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.8);
+}
+.padded {
+  padding: 15px;
+}
+.padded--light {
+  padding: 5px;
+}
+.padded--lighter {
+  padding: 2px 5px;
+}
+.grid {
+  display: grid;
+  grid-gap: 15px;
+}
+.grid--nogap {
+  grid-gap: 0px;
+}
+.grid--c {
+  grid-auto-flow: column;
+  justify-content: start;
+}
+.grid--r {
+  grid-auto-flow: row;
+  align-content: start;
+}
+.grid--r--split {
+  align-content: space-between;
+}
+.grid--c--split {
+  justify-content: space-between;
+}
+.interface {
+  /* display: grid; */
+  grid-template-areas:
+    "header   menu"
+    "game     menu"
+    "controls menu";
+  grid-template-columns: minmax(auto, 2000px) minmax(325px, auto);
+  grid-template-rows: auto minmax(auto, 2000px) auto;
+  height: calc(100% - 50px);
+  width: calc(100% - 50px);
+}
+.canvas__wrapper {
+  position: absolute;
+  background-image: linear-gradient(
+      30deg,
+      rgba(57, 160, 237, 0.075),
+      rgba(255, 255, 255, 0.01)
+    ),
+    linear-gradient(100deg, rgba(100, 11, 40, 0.075), rgba(94, 252, 141, 0.075));
+  z-index: 5;
+  /* transition: transform 250ms ease-in-out; */
+}
+.game {
+  grid-area: game;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0px 0px 200px rgba(0, 0, 0, 1);
+}
+.game__controls {
+  grid-area: controls;
+  width: 100%;
+}
+.header {
+  grid-area: header;
+}
+.menu {
+  grid-area: menu;
+  overflow: hidden;
+  overflow-y: scroll;
+  width: 100%;
+}
+.menu__content {
+  height: 100%;
+}
+
+.menu__controls {
+  margin-top: 50px;
+}
+
+.info__item {
+  font-size: 30px;
+}
+
+.info__label {
+  padding-left: 8px;
+}
+
+.menu > .control {
+  width: 100%;
+}
+
+.control {
+  background: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 30px;
+  transition: all 500ms ease-out;
+}
+.control:active {
+  color: #fff;
+  border: 4px solid rgba(255, 255, 255, 1);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 1),
+    0 0 10px rgba(255, 255, 255, 1);
+  text-shadow: 0px 0px 6px rgba(255, 255, 255, 1);
+  transition: none;
+}
+.control--inactive {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
+.line {
+  background: red;
+  position: absolute;
+  z-index: 100;
+  /* outline: 1px dashed red; */
+}
+.line--v {
+  height: 100%;
+  left: 50%;
+  width: 1px;
+}
+.line--h {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+}
+.dev__data {
+  color: rgba(112, 255, 255, 0.9);
+  font-size: 10px;
+  left: 25px;
+  position: fixed;
+  top: 7px;
+  text-shadow: 0px 0px 6px rgba(112, 255, 255, 0.5);
+}
+
+.loading__bar {
+  height: 30px;
+  margin: 0 15%;
+  position: absolute;
+  width: 70%;
+  top: calc(50% - 15px);
+  overflow: hidden;
+}
+
+.loading__bar__progress {
+  height: 100%;
+  background: rgba(112, 255, 255, 0.9);
+
+  top: 0;
+  left: 0;
+  transform: translate(calc(-100%), 0);
+  transition: transform 50ms linear;
+}
