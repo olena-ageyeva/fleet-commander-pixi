@@ -8,7 +8,7 @@ function toggleStats() {
     stats.showPanel();
     showStats = false;
   } else {
-    stats.showPanel(0, 1, 2);
+    stats.showPanel(2);
     showStats = true;
   }
 }
@@ -25,7 +25,7 @@ let translate = false;
 const fleetSize = 1000;
 const shipVelocity = 1000;
 const gamesize = 3000; // universe size 3000
-const starDensity = 90; // 90
+const starDensity = 1000; // 90
 const starProximity = 5;
 const generateShips = false;
 const starAttempts = 500;
