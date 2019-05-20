@@ -1,19 +1,3 @@
-// STATS
-const stats = new Stats();
-let showStats = false;
-document.body.appendChild(stats.dom);
-stats.showPanel();
-function toggleStats() {
-  if (showStats) {
-    stats.showPanel();
-    showStats = false;
-  } else {
-    stats.showPanel(2);
-    showStats = true;
-  }
-}
-// STATS
-
 // VARIABLES
 let mouse;
 let selectedShip;
@@ -21,14 +5,16 @@ let fleet;
 let universe;
 let lockShip;
 let translate = false;
+let showVoyage = false;
 
 const fleetSize = 1000;
 const shipVelocity = 1000;
-const gamesize = 3000; // universe size 3000
-const starDensity = 1000; // 90
-const starProximity = 5;
+const gamesize = { width: 4096, height: 4096 }; // 4096 max
+const starDensity = 10000;
+const starProximity = 50;
 const generateShips = false;
-const starAttempts = 500;
+const starAttempts = 1000000;
+const starEdgeDistance = 50;
 const proximity = 20;
 
 const canvasPos = {
@@ -43,7 +29,15 @@ const fpsCounter = document.getElementById("fps");
 const shipCount = document.getElementById("shipCount");
 const starCount = document.getElementById("starCount");
 const gameContainer = document.getElementById("game__container");
+let gameContainerSize;
 const loadBar = document.getElementById("loader");
+const voyageToggle = document.getElementById("voyage_toggle");
+const snapshot = document.getElementById("snapshot");
+const mapLoadingText = document.getElementById("map_loading_text");
+
+const interface = document.getElementById("interface");
+const interfaceLoader = document.getElementById("interface_loader");
+const interfaceFader = document.getElementById("interface_fader");
 
 const devButton = document.getElementById("dev_console");
 const shipFocus = document.getElementById("ship_focus");
@@ -52,18 +46,14 @@ const destinationFocus = document.getElementById("destination_focus");
 const shipLock = document.getElementById("ship_lock");
 const deselect = document.getElementById("deselect");
 
-const gameContainerSize = {
-  height: gameContainer.clientHeight,
-  width: gameContainer.clientWidth
-};
 // DOM
-
-devButton.addEventListener("click", toggleStats);
+snapshot.addEventListener("click", takeSnapshot);
+voyageToggle.addEventListener("click", toggleVoyage);
 
 shipFocus.addEventListener("click", () => {
   if (selectedShip) {
     lockShip = false;
-    centerView(selectedShip.coordinates);
+    centerView(selectedShip.coordinates, selectedShip);
   }
 });
 
@@ -86,6 +76,59 @@ shipLock.addEventListener("click", () => {
   shipLock.classList.toggle("active");
 });
 
+function loadUI() {
+  let width = interfaceLoader.clientWidth;
+  interfaceLoader.style.transform = `translate(${width}px, 0)`;
+}
+
+function showUI() {
+  interface.removeChild(interfaceLoader);
+  interface.style.width = `calc(100% - 50px)`;
+  setTimeout(() => {
+    interface.style.height = `calc(100% - 50px)`;
+    setTimeout(() => {
+      interfaceFader.style.opacity = 1;
+      setTimeout(() => {
+        loadMap();
+      }, 500);
+    }, 750);
+  }, 750);
+}
+
+function loadMap() {
+  let up = true;
+  let blinks = 0;
+  const blinkterval = setInterval(() => {
+    blinks++;
+    mapLoadingText.style.opacity = up ? 1 : 0.25;
+    up = !up;
+    if (blinks === 5) {
+      mapLoadingText.innerText = "COMPLETE";
+      clearInterval(blinkterval);
+      setTimeout(() => {
+        mapLoadingText.style.opacity = 0;
+        document.querySelectorAll(".game__content").forEach(node => {
+          node.style.opacity = 1;
+        });
+        document.querySelectorAll(".map__pan__control").forEach(node => {
+          node.style.opacity = 0.1;
+        });
+        gameContainerSize = {
+          height: gameContainer.clientHeight,
+          width: gameContainer.clientWidth
+        };
+      }, 1000);
+    }
+  }, 500);
+}
+
+setTimeout(() => {
+  loadUI();
+  setTimeout(() => {
+    showUI();
+  }, 2000);
+}, 500);
+
 // INIT PIXI
 let Application = PIXI.Application,
   loader = PIXI.Loader.shared,
@@ -102,20 +145,26 @@ let style = new PIXI.TextStyle({
   fontWeight: 700,
   fill: "white"
 });
-let type = "WebGL";
-if (!PIXI.utils.isWebGLSupported()) {
-  type = "canvas";
-}
-// PIXI.utils.sayHello(type);
-PIXI.utils.skipHello(type);
-let app = new Application({
-  width: gamesize,
-  height: gamesize,
+const renderer = new PIXI.Renderer({
+  width: gamesize.width,
+  height: gamesize.height,
   antialias: true,
   transparent: true,
   resolution: 1
 });
-canvasWrapper.appendChild(app.view);
+canvasWrapper.appendChild(renderer.view);
+const stage = new PIXI.Container();
+const voyageLayer = new PIXI.Container();
+const voyageLine = new Graphics();
+voyageLine.resolution = 1;
+voyageLine.alpha = 1;
+voyageLayer.addChild(voyageLine);
+stage.addChild(voyageLayer);
+const ticker = new PIXI.Ticker();
+ticker.add(() => {
+  renderer.render(stage);
+}, PIXI.UPDATE_PRIORITY.LOW);
+ticker.start();
 // load assets
 loader
   .add([
@@ -135,6 +184,11 @@ let starTexture;
 // TEXTURES
 
 // FUNCTIONS
+function toggleVoyage() {
+  showVoyage = !showVoyage;
+  voyageLine.clear();
+}
+
 function getRandomWholeNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -156,17 +210,35 @@ function Vector(magnitude, angle) {
   this.magnitudeY = magnitude * Math.sin(angleRadians);
 }
 
-function getRandomStar() {
+function getRandomStar(limit) {
+  if (limit && limit.distance > 0) {
+    const limitedStars = universe.filter((limitStar, index) => {
+      const starDistance = distanceAndAngleBetweenTwoPoints(
+        limitStar.x,
+        limitStar.y,
+        limit.origin.x,
+        limit.origin.y
+      ).distance;
+      return starDistance <= limit.distance;
+    });
+    let getStar = true;
+    let newStar;
+    let tries = 0;
+    newStar = limitedStars[getRandomWholeNumber(0, limitedStars.length - 1)];
+    return newStar;
+  }
   return universe[getRandomWholeNumber(0, universe.length - 1)];
 }
 
 function makeShip(index) {
+  const maxDist = 200;
   const origin = getRandomStar();
-  let destination = getRandomStar();
+  const destination = getRandomStar({ distance: maxDist, origin });
   return {
     name: `${index % 2 === 0 ? "SHIP" : "SHIPPPPPPPP"}-${index + 1}`,
     origin,
     destination,
+    voyages: [{ origin, destination }],
     directionX: origin.x > destination.x ? "west" : "east",
     directionY: origin.y > destination.y ? "north" : "south",
     coordinates: origin,
@@ -181,6 +253,7 @@ function makeShip(index) {
     maxVelocity: 10,
     prepTime: 10,
     setSelected: false,
+    maxTravelDistance: maxDist,
     scanning: {
       active: false,
       startingRadius: 1,
@@ -212,35 +285,44 @@ function generateFleet() {
 
 function updateProgress(cur, tot) {
   const percent = Math.floor((cur / tot) * 100);
-  console.log(percent);
   // loadBar.style.transform = `translate(calc(${percent}%)px, 0)`;
   // loadBar.style.transform = `translate(${percent}px, 0)`;
 }
 
 function generateUniverse(size, density) {
-  console.log("make stars");
-  const stars = Math.floor((size * size) / density);
+  const stars = Math.floor((size.width * size.height) / density);
   const starCoords = [];
-  let i = 0;
+  let parentStar;
   for (let i = 0; i < stars; i++) {
-    // updateProgress(starCoords.length, stars);
-    let newStarCoords;
     if (i === 0) {
       starCoords.push({
-        x: getRandomWholeNumber(10, size),
-        y: getRandomWholeNumber(10, size)
+        // x: getRandomWholeNumber(10, size.width),
+        // y: getRandomWholeNumber(10, size.height)
+        name: `STAR-${i + 1}`,
+        x: size.width / 2,
+        y: size.height / 2
       });
+      parentStar = starCoords[0];
     } else {
+      let newStarCoords;
       let tries = 0;
       while (newStarCoords === undefined) {
         let prox = false;
         const someCoords = {
-          x: getRandomWholeNumber(10, size),
-          y: getRandomWholeNumber(10, size)
+          name: `STAR-${i + 1}`,
+          x: getRandomWholeNumber(starEdgeDistance, size.width),
+          y: getRandomWholeNumber(starEdgeDistance, size.height)
         };
-
         for (let s = 0; s < starCoords.length; s++) {
-          if (checkProximity(starProximity, someCoords, starCoords[s])) {
+          // checkProximity(starProximity, someCoords, starCoords[s])
+          if (
+            distanceAndAngleBetweenTwoPoints(
+              someCoords.x,
+              someCoords.y,
+              starCoords[s].x,
+              starCoords[s].y
+            ).distance < starProximity
+          ) {
             tries++;
             if (tries > starAttempts) {
               throw new Error("universe limits too tight");
@@ -252,6 +334,10 @@ function generateUniverse(size, density) {
         if (!prox) {
           newStarCoords = someCoords;
         }
+      }
+
+      if (i % 50 === 0) {
+        parentStar = newStarCoords;
       }
       starCoords.push(newStarCoords);
     }
@@ -276,13 +362,14 @@ function getTravelData(ship, milliseconds) {
 }
 
 function getStarRadius() {
-  const starSizes = [0.75, 1.25, 1.75, 2.25, 2.75];
+  // const starSizes = [1.75, 2, 2.25, 2.5, 2.75];
+  const starSizes = [3, 3, 3, 3, 3];
 
   const random = Math.random();
-  if (random <= 0.4) {
+  if (random <= 0.3) {
     return starSizes[0];
   }
-  if (random > 0.4 && random <= 0.75) {
+  if (random > 0.3 && random <= 0.75) {
     return starSizes[1];
   }
   if (random > 0.75 && random <= 0.85) {
@@ -296,39 +383,32 @@ function getStarRadius() {
   }
 }
 
-function centerView(coords, shipToFollow) {
+function centerView(coords, centerShip) {
   if (lockShip === true) {
     canvasWrapper.style.transition = `none`;
   } else {
     canvasWrapper.style.transition = `transform 250ms ease-in-out`;
   }
   let coordinates = coords;
-  // let followedShip;
-  // if (shipToFollow) {
-  //   followedShip = fleet.filter(ship => ship.name === shipToFollow.name)[0];
-  //   if (followedShip) {
-  //     coordinates = followedShip.coordinates;
-  //   }
-  // }
   const newX = (coordinates.x - (gameContainerSize.width + 1) / 2) * -1;
   const newY = (coordinates.y - (gameContainerSize.height + 2) / 2) * -1;
 
   const newMapPosition = {
     x:
-      newX < 0 && newX > (gamesize - gameContainerSize.width) * -1
+      newX < 0 && newX > (gamesize.width - gameContainerSize.width) * -1
         ? newX
         : newX >= 0
         ? 0
-        : newX < (gamesize - gameContainerSize.width) * -1
-        ? (gamesize - gameContainerSize.width) * -1
+        : newX < (gamesize.width - gameContainerSize.width) * -1
+        ? (gamesize.width - gameContainerSize.width) * -1
         : newX,
     y:
-      newY < 0 && newY > (gamesize - (gameContainerSize.height - 4)) * -1
+      newY < 0 && newY > (gamesize.height - (gameContainerSize.height - 4)) * -1
         ? newY
         : newY >= 0
         ? 0
-        : newY < (gamesize - (gameContainerSize.height - 4)) * -1
-        ? (gamesize - (gameContainerSize.height - 4)) * -1
+        : newY < (gamesize.height - (gameContainerSize.height - 4)) * -1
+        ? (gamesize.height - (gameContainerSize.height - 4)) * -1
         : newY
   };
 
@@ -337,20 +417,11 @@ function centerView(coords, shipToFollow) {
   canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
     canvasPos.y
   }px)`;
-}
-
-function initShipSprites(ship) {
-  ship.sprite = new Sprite();
-  ship.sprite.texture = unselectShipTexture;
-
-  // add message
-  ship.message = new Text(ship.name, style);
-  ship.message.resolution = 2;
-
-  app.stage.addChild(ship.sprite);
-  app.stage.addChild(ship.message);
-  app.stage.addChild(ship.selection);
-  app.stage.addChild(ship.destinationSprite);
+  if (centerShip) {
+    setTimeout(() => {
+      lockShip = true;
+    }, 250);
+  }
 }
 
 let destinationSprite;
@@ -365,15 +436,7 @@ function setup() {
     resources["assets/sprites/ship-selection-ring.png"].texture;
   starTexture = resources["assets/sprites/star.png"].texture;
   // TEXTURES
-  function updateMouse(event) {
-    const bounds = event.target.getBoundingClientRect();
-    const newMouse = {
-      x: event.x - bounds.left,
-      y: event.y - bounds.top
-    };
-    mouse = newMouse;
-  }
-  app.view.addEventListener("mousemove", function(event) {
+  renderer.view.addEventListener("mousemove", function(event) {
     const bounds = event.target.getBoundingClientRect();
     const newMouse = {
       x: event.x - bounds.left,
@@ -381,35 +444,48 @@ function setup() {
     };
     mouse = newMouse;
   });
-  app.view.addEventListener("mouseleave", function(event) {
+  renderer.view.addEventListener("mouseleave", function(event) {
     mouse = {
       x: undefined,
       y: undefined
     };
   });
-  app.view.addEventListener("click", function(event) {
+  renderer.view.addEventListener("click", function(event) {
     const bounds = event.target.getBoundingClientRect();
     const clickCoords = {
       x: event.x - bounds.left,
       y: event.y - bounds.top
     };
     const clickedShip = fleet.filter(ship => {
-      return checkProximity(proximity, clickCoords, ship.coordinates);
+      // return checkProximity(proximity, clickCoords, ship.coordinates);
+      return (
+        distanceAndAngleBetweenTwoPoints(
+          clickCoords.x,
+          clickCoords.y,
+          ship.coordinates.x,
+          ship.coordinates.y
+        ).distance < proximity
+      );
     })[0];
     if (clickedShip) {
+      voyageLine.clear();
       lockShip = false;
       selectedShip = clickedShip;
       centerView(clickedShip.coordinates, clickedShip);
     } else {
+      voyageLine.clear();
       selectedShip = undefined;
     }
   });
 
   universe = generateUniverse(gamesize, starDensity);
   starCount.innerText = `STARS ${universe.length.toLocaleString()}`;
-  starContainer = new PIXI.ParticleContainer();
+  starContainer = new PIXI.Container();
+  // starContainer.maxSize = 1000000;
+
   universe.forEach(starCoordinate => {
     const star = new Sprite(starTexture);
+    star.anchor.set(0.5);
     const starSize = getStarRadius();
     star.x = starCoordinate.x;
     star.y = starCoordinate.y;
@@ -418,29 +494,38 @@ function setup() {
     star.resolution = 1;
     starContainer.addChild(star);
   });
-  app.stage.addChild(starContainer);
+  starContainer.cacheAsBitmap = true;
+
+  stage.addChild(starContainer);
 
   fleet = generateFleet();
   shipContainer = new PIXI.ParticleContainer();
   fleet.forEach(ship => {
     // assign starting sprite and starting texture
     ship.sprite = new Sprite();
+    ship.sprite.anchor.set(0.5);
     ship.sprite.texture = unselectShipTexture;
     ship.sprite.height = 6;
     ship.sprite.width = 6;
 
     // add message
     ship.message = new Text(ship.name, style);
+    ship.statsText = new Text("STATS: THIS IS A STAT", style);
     ship.message.resolution = 2;
+    ship.statsText.resolution = 2;
 
     shipContainer.addChild(ship.sprite);
   });
-  app.stage.addChild(shipContainer);
+  stage.addChild(shipContainer);
 
   destinationSprite = new Sprite(selectedShipTexture);
+  destinationSprite.anchor.set(0.5);
   selectionSprite = new Sprite(selectionRingTexture);
+  selectionSprite.anchor.set(0.5);
   hoverSprite = new Sprite(selectedShipTexture);
+  hoverSprite.anchor.set(0.5);
   selectedShipSprite = new Sprite(selectedShipTexture);
+  selectedShipSprite.anchor.set(0.5);
   destinationSprite.height = 6;
   destinationSprite.width = 6;
   hoverSprite.height = 20;
@@ -451,21 +536,18 @@ function setup() {
   destinationSprite.visible = false;
   hoverSprite.visible = false;
   selectedShipSprite.visible = false;
-  app.stage.addChild(selectionSprite);
-  app.stage.addChild(destinationSprite);
-  app.stage.addChild(hoverSprite);
-  app.stage.addChild(selectedShipSprite);
-
-  //Set the game state
-  state = play;
+  stage.addChild(selectionSprite);
+  stage.addChild(destinationSprite);
+  stage.addChild(hoverSprite);
+  stage.addChild(selectedShipSprite);
 
   //Start the game loop
-  app.ticker.add(delta => gameLoop(delta));
+  ticker.add(delta => gameLoop(delta));
 }
 
 function gameLoop(delta) {
   //Update the current game state:
-  state(delta);
+  play(delta);
 }
 
 function checkProximity(distance, origin, target) {
@@ -481,12 +563,12 @@ function checkProximity(distance, origin, target) {
 }
 
 let frames = 60;
+
 function play(delta) {
-  stats.begin();
   frames++;
   if (frames >= 60) {
     frames = 0;
-    const fps = app.ticker.FPS;
+    const fps = ticker.FPS;
     fpsCounter.innerText = `FPS ${fps.toFixed(0)}`;
     shipCount.innerText = `SHIPS ${fleet.length}`;
     if (fps > 30 && generateShips) {
@@ -497,6 +579,7 @@ function play(delta) {
   }
   // update all ships
   let proxShip;
+
   fleet.forEach((ship, index) => {
     if (ship.travelling) {
       const travelData = getTravelData(ship, delta);
@@ -504,7 +587,13 @@ function play(delta) {
       ship.distanceToDestination = distanceToDestination;
       if (ship.distanceToDestination < 1) {
         ship.origin = ship.coordinates;
-        ship.destination = getRandomStar();
+        ship.destination = getRandomStar({
+          distance: ship.maxTravelDistance,
+          origin: ship.origin
+        });
+        if (ship.voyages.length > 100) {
+          ship.voyages.shift();
+        }
       }
       const newShipX =
         ship.coordinates.x +
@@ -516,13 +605,21 @@ function play(delta) {
       ship.coordinates = { x: newShipX, y: newShipY };
       ship.directionX = newShipX > ship.destination.x ? "west" : "east";
       ship.directionY = newShipY > ship.destination.y ? "north" : "south";
-
-      if (mouse && checkProximity(proximity, ship.coordinates, mouse)) {
+      // checkProximity(proximity, ship.coordinates, mouse)
+      if (
+        mouse &&
+        distanceAndAngleBetweenTwoPoints(
+          mouse.x,
+          mouse.y,
+          ship.coordinates.x,
+          ship.coordinates.y
+        ).distance < proximity
+      ) {
         proxShip = ship;
       }
 
-      ship.sprite.x = newShipX - 3;
-      ship.sprite.y = newShipY - 3;
+      ship.sprite.x = newShipX;
+      ship.sprite.y = newShipY;
 
       if (selectedShip && ship.name === selectedShip.name) {
         // lock ship to view on each frame
@@ -531,43 +628,64 @@ function play(delta) {
         }
         if (!ship.setSelected) {
           ship.setSelected = true;
-          app.stage.addChild(ship.message);
+          stage.addChild(ship.message);
+          stage.addChild(ship.statsText);
         }
         // remove previous line and text
-        app.stage.removeChild(ship.line);
+        stage.removeChild(ship.line);
+
+        let textStartY;
+        let textStartX = newShipX - 20;
+
+        // ADJUST DISPLAY Y
+        if (
+          (ship.directionY === "north" || newShipY < 90) &&
+          newShipY < gamesize.height - 100
+        ) {
+          textStartY = newShipY + 20 + 7;
+        } else {
+          textStartY = newShipY - 20 - ship.statsText.height - 5;
+        }
+        // ADJUST DISPLAY X
+        if (newShipX >= gamesize.width - (ship.statsText.width - 20)) {
+          textStartX = gamesize.width - ship.statsText.width;
+        }
+        if (newShipX <= 30) {
+          textStartX = 10;
+        }
 
         // update ship message position and add to stage
+        const nameOffset = ship.message.width + 26;
         let nameStartY = newShipY - 4.5;
         if (newShipY <= 12) {
           nameStartY = 16;
         }
-        if (newShipY > gamesize - 14) {
-          nameStartY = gamesize - 10;
+        if (newShipY > gamesize.height - 14) {
+          nameStartY = gamesize.height - 10;
         }
-
-        const nameOffset = ship.message.width + 26;
-
         let nameStartX =
           ship.directionX === "east" ? newShipX - nameOffset : newShipX + 26;
-        if (newShipX > gamesize - (nameOffset + 10)) {
+        if (newShipX > gamesize.width - (nameOffset + 10)) {
           nameStartX = newShipX - nameOffset;
         }
         if (newShipX < nameOffset + 10) {
           nameStartX = newShipX + 26;
         }
         ship.message.position.set(nameStartX, nameStartY);
+        ship.statsText.position.set(textStartX, textStartY);
 
         // add line primitive and add to stage
         ship.line = new Graphics();
         ship.line.lineStyle(1, 0x70ffe9);
         ship.line.moveTo(newShipX, newShipY);
         ship.line.lineTo(ship.destination.x, ship.destination.y);
-        app.stage.addChild(ship.line);
+        stage.addChild(ship.line);
       } else {
         if (ship.setSelected) {
           ship.setSelected = false;
-          app.stage.removeChild(ship.line);
-          app.stage.removeChild(ship.message);
+          stage.removeChild(ship.line);
+          stage.removeChild(ship.message);
+          stage.removeChild(ship.statsText);
         }
       }
     }
@@ -580,8 +698,8 @@ function play(delta) {
     if (canvasWrapper.style.cursor !== "pointer") {
       canvasWrapper.style.cursor = "pointer";
     }
-    hoverSprite.x = proxShip.coordinates.x - 10;
-    hoverSprite.y = proxShip.coordinates.y - 10;
+    hoverSprite.x = proxShip.coordinates.x;
+    hoverSprite.y = proxShip.coordinates.y;
   } else {
     if (hoverSprite.visible) {
       hoverSprite.visible = false;
@@ -594,14 +712,14 @@ function play(delta) {
     if (!selectedShipSprite.visible) {
       selectedShipSprite.visible = true;
     }
-    selectionSprite.x = selectedShip.coordinates.x - 20;
-    selectionSprite.y = selectedShip.coordinates.y - 20;
+    selectionSprite.x = selectedShip.coordinates.x;
+    selectionSprite.y = selectedShip.coordinates.y;
     selectionSprite.visible = true;
     destinationSprite.visible = true;
-    destinationSprite.x = selectedShip.destination.x - 3;
-    destinationSprite.y = selectedShip.destination.y - 3;
-    selectedShipSprite.x = selectedShip.coordinates.x - 5;
-    selectedShipSprite.y = selectedShip.coordinates.y - 5;
+    destinationSprite.x = selectedShip.destination.x;
+    destinationSprite.y = selectedShip.destination.y;
+    selectedShipSprite.x = selectedShip.coordinates.x;
+    selectedShipSprite.y = selectedShip.coordinates.y;
   } else {
     if (selectedShipSprite.visible) {
       selectedShipSprite.visible = false;
@@ -613,7 +731,6 @@ function play(delta) {
       selectionSprite.visible = false;
     }
   }
-  stats.end();
 }
 
 // CONTROLS
@@ -668,3 +785,12 @@ keyObject.release = () => {
   translate = false;
 };
 // CONTROLS
+
+function takeSnapshot() {
+  const image = renderer.extract.image(starContainer);
+  image.id = "voyage_image";
+  document.body.appendChild(image);
+  setTimeout(() => {
+    document.body.removeChild(document.getElementById("voyage_image"));
+  }, 5000);
+}

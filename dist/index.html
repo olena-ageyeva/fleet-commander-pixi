@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="/favicon.26242483.ico">
+    <link rel="stylesheet" href="/mapPanStyles.6b2be96f.css">
+    <link rel="stylesheet" href="/main.d2070829.css">
+
+    <title>Fleet Commander</title>
+  <script src="/mapPanStyles.6b2be96f.js"></script><script src="/main.d2070829.js"></script></head>
+  <!-- <script src="stats/stats.min.js"></script>
+  <script src="pixi/pixi.min.js"></script> -->
+  <body>
+    <div class="asset__loader">
+      load
+    </div>
+    <div class="interface bordered padded grid">
+      <div class="dev__data grid grid--c">
+        <span>BUILD development</span>
+        <span id="fps">LOADING</span>
+        <span id="shipCount"></span>
+        <span id="starCount"></span>
+      </div>
+      <div class="header bordered padded grid grid--c">
+        <button id="dev_console" class="control bordered padded--lighter blue__glow">
+          DVP
+        </button>
+        <button class="control bordered padded--lighter blue__glow">
+          LST
+        </button>
+        <button class="control bordered padded--lighter blue__glow">
+          LNCH
+        </button>
+        <button class="control control--inactive bordered padded--lighter blue__glow">
+          SCN
+        </button>
+      </div>
+      <div id="game__container" class="game bordered">
+        <!-- <div class="loading__bar bordered">
+          <div id="loader" class="loading__bar__progress"></div>
+        </div> -->
+        <!-- <div class="line line--v"></div>
+        <div class="line line--h"></div> -->
+        <div class="map__pan__control map__pan__control--topLeft"></div>
+        <div class="map__pan__control map__pan__control--top"></div>
+        <div class="map__pan__control map__pan__control--topRight"></div>
+        <div class="map__pan__control map__pan__control--right"></div>
+        <div class="map__pan__control map__pan__control--bottomRight"></div>
+        <div class="map__pan__control map__pan__control--bottom"></div>
+        <div class="map__pan__control map__pan__control--bottomLeft"></div>
+        <div class="map__pan__control map__pan__control--left"></div>
+        <div id="canvas__wrapper" class="canvas__wrapper"></div>
+      </div>
+      <div class="game__controls bordered padded grid grid--c grid--c--split">
+        <div>
+          <button id="ship_focus" class="control bordered padded--lighter blue__glow">
+            SHP
+          </button>
+          <button id="destination_focus" class="control bordered padded--lighter blue__glow">
+            DSTN
+          </button>
+        </div>
+        <div>
+          <button id="ship_lock" class="control bordered padded--lighter blue__glow">
+            LCK
+          </button>
+          <button id="deselect" class="control bordered padded--lighter blue__glow">
+            DSL
+          </button>
+        </div>
+      </div>
+      <div class="menu bordered padded ">
+        <div class="menu__content grid grid--r grid--r--split">
+          <div class="menu__data grid grid--r">
+            <div class="info__item grid grid--nogap grid-r">
+              <span class="info__label blue__glow padded--light">LBL</span>
+              <span class="info__value bordered padded--light white__glow">VL</span>
+            </div>
+          </div>
+          <div class="menu__controls grid grid-r">
+            <button class="control bordered padded--lighter blue__glow">
+              STP
+            </button>
+            <button class="control bordered padded--lighter blue__glow">
+              SCN
+            </button>
+            <button id="voyage_toggle" class="control bordered padded--lighter blue__glow">
+              VYG
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/game.7bbe06d5.js"></script>
+    <!-- <script src="./game/main.js"></script> -->
+  </body>
+</html>
