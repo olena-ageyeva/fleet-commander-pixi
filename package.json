@@ -4,16 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "parcel build index.html",
-    "dev": "parcel index.html",
-    "start": "serve ./dist",
-    "serve": "serve ."
+    "start": "serve ./src"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "pixi.js": "^5.0.2",
-    "uuid": "^3.3.2"
+    "serve": "^11.0.0"
   }
 }
