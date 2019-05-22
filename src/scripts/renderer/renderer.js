@@ -31,6 +31,7 @@ const voyageLayer = new Container();
 const textStyle = new PIXI.TextStyle({
   fontFamily: "Inconsolata",
   letterSpacing: 1.75,
+  lineHeight: 13,
   fontSize: 12,
   fontWeight: 700,
   fill: "white"
@@ -98,7 +99,9 @@ Loader.add([
   "assets/sprites/ship.png",
   "assets/sprites/ship-selected.png",
   "assets/sprites/ship-selection-ring.png",
-  "assets/sprites/star.png"
+  "assets/sprites/star.png",
+  "assets/sprites/ship-selection-ring-dashed.png",
+  "assets/sprites/ship-selection-ring-dashed2.png"
 ]).load(setup);
 
 // declate textures
@@ -118,7 +121,7 @@ function setup() {
   unselectShipTexture = Resources["assets/sprites/ship.png"].texture;
   selectedShipTexture = Resources["assets/sprites/ship-selected.png"].texture;
   selectionRingTexture =
-    Resources["assets/sprites/ship-selection-ring.png"].texture;
+    Resources["assets/sprites/ship-selection-ring-dashed2.png"].texture;
   starTexture = Resources["assets/sprites/star.png"].texture;
 
   // generate the universe
@@ -150,7 +153,7 @@ function setup() {
 
     // add message
     ship.message = new Text(ship.name, textStyle);
-    ship.statsText = new Text("STATS: THIS IS A STAT", textStyle);
+    ship.statsText = new Text("STATUS: UNKNOWN", textStyle);
     ship.message.resolution = 2;
     ship.statsText.resolution = 2;
 

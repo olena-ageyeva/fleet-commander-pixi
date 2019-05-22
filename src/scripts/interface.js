@@ -1,3 +1,5 @@
+const skipAnimation = false;
+
 const canvasWrapper = document.getElementById("canvas__wrapper");
 const fpsCounter = document.getElementById("fps");
 const shipCount = document.getElementById("shipCount");
@@ -49,7 +51,6 @@ shipLock.addEventListener("click", () => {
   shipLock.classList.toggle("active");
 });
 
-const skipAnimation = false;
 const animationTime = {
   loadUITimeout: skipAnimation === true ? 0 : 500,
   showUITimeout: skipAnimation === true ? 0 : 2000,
@@ -96,6 +97,15 @@ function loadMap() {
         });
         document.querySelectorAll(".map__pan__control").forEach(node => {
           node.style.opacity = 0.1;
+          node.addEventListener("mousedown", ev => {
+            panMap(ev.target.dataset.direction);
+          });
+          node.addEventListener("mouseup", ev => {
+            stopMapPan();
+          });
+          node.addEventListener("mouseleave", ev => {
+            stopMapPan();
+          });
         });
         gameContainerSize = {
           height: gameContainer.clientHeight,

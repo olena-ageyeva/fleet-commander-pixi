@@ -60,16 +60,17 @@ function play(delta) {
         let textStartX = newShipX - 20;
         // ADJUST DISPLAY Y
         if (
-          (ship.directionY === "north" || newShipY < 90) &&
-          newShipY < gamesize.height - 100
+          (ship.directionY === "north" ||
+            newShipY < ship.statsText.height * 1.75) &&
+          newShipY < gamesize.height - ship.statsText.height * 1.75
         ) {
           textStartY = newShipY + 20 + 7;
         } else {
           textStartY = newShipY - 20 - ship.statsText.height - 5;
         }
         // ADJUST DISPLAY X
-        if (newShipX >= gamesize.width - (ship.statsText.width - 20)) {
-          textStartX = gamesize.width - ship.statsText.width;
+        if (newShipX >= gamesize.width - (ship.statsText.width - 10)) {
+          textStartX = gamesize.width - ship.statsText.width - 10;
         }
         if (newShipX <= 30) {
           textStartX = 10;
@@ -77,8 +78,8 @@ function play(delta) {
         // update ship message position and add to stage
         const nameOffset = ship.message.width + 26;
         let nameStartY = newShipY - 4.5;
-        if (newShipY <= 12) {
-          nameStartY = 16;
+        if (newShipY <= ship.message.height + 5) {
+          nameStartY = ship.message.height;
         }
         if (newShipY > gamesize.height - 14) {
           nameStartY = gamesize.height - 10;
@@ -93,7 +94,9 @@ function play(delta) {
         }
         ship.statsText.text = `ETA: ${convertTime(
           Math.floor(ship.distanceToDestination / ship.velocity / 60)
-        )}\nDIST: ${renderDistance(ship.distanceToDestination)}`;
+        )}\nDIST: ${renderDistance(ship.distanceToDestination)}\nDEST: ${
+          ship.destination.name
+        }`;
         ship.message.position.set(nameStartX, nameStartY);
         ship.statsText.position.set(textStartX, textStartY);
         voyageLine.clear();
@@ -142,6 +145,7 @@ function play(delta) {
     selectedShipSprite.y = selectedShip.coordinates.y;
     selectionSprite.x = selectedShip.coordinates.x;
     selectionSprite.y = selectedShip.coordinates.y;
+    selectionSprite.rotation += 0.01;
   } else {
     if (selectedShipSprite.visible) {
       selectedShipSprite.visible = false;

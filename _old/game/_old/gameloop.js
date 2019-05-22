@@ -30,9 +30,6 @@ export function play(delta) {
   let proxShip;
 
   fleet.forEach((ship, index) => {
-    if (index === 0) {
-      console.log(ship);
-    }
     if (ship.travelling) {
       ship.getTravelData(delta);
 

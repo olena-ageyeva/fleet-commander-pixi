@@ -13,7 +13,7 @@ class Ship {
     this.setSelected = false;
     this.travelData = {};
     this.travelling = true;
-    this.velocity = this.baseVelocity * 1; // 1 pixel per second base
+    this.velocity = this.baseVelocity * 10; // 1: 1 pixel per second base
     this.voyages = [{ origin, destination }];
     this.getTravelData = this.getTravelData.bind(this);
   }

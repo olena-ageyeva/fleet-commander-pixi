@@ -52,8 +52,6 @@ voyageLine.lineStyle(1, 0x5ffb8e);
 export let renderer;
 export function startEngine() {
   // INIT RENDERER
-  console.log(universe.size.height);
-  console.log(universe.size.width);
 
   renderer = new PIXI.Renderer({
     antialias: true,
@@ -62,8 +60,6 @@ export function startEngine() {
     transparent: true,
     width: universe.size.width
   });
-
-  console.log(renderer);
 
   // START TICKER
   ticker.add(() => {

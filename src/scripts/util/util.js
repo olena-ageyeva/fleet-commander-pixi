@@ -64,7 +64,7 @@ function getRandomStar(limit) {
 }
 
 function makeShip(index) {
-  const range = 5 * 60;
+  const range = 50 * 60;
   const origin = getRandomStar();
   const destination = getRandomStar({ distance: range, origin });
   const name = `${index % 2 === 0 ? "SHIP" : "SHIPPPPPPPP"}-${index + 1}`;
@@ -151,7 +151,7 @@ function getTravelData(ship, milliseconds) {
 }
 
 function getStarRadius() {
-  // const starSizes = [1.75, 2, 2.25, 2.5, 2.75];
+  // const starSizes = [2, 2.5, 3, 4, 5];
   const starSizes = [4, 4, 4, 4, 4];
 
   const random = Math.random();
@@ -172,12 +172,37 @@ function getStarRadius() {
   }
 }
 
+function convertTime(seconds) {
+  let remainingSeconds = parseInt(seconds, 10);
+  const days = Math.floor(remainingSeconds / (3600 * 24));
+  const dayDisplay = days < 10 ? `0${days}` : days;
+  remainingSeconds -= days * 3600 * 24;
+  const hours = Math.floor(remainingSeconds / 3600);
+  const hourDisplay = hours < 10 ? `0${hours}` : hours;
+  remainingSeconds -= hours * 3600;
+  const minutes = Math.floor(remainingSeconds / 60);
+  const minuteDisplay = minutes < 10 ? `0${minutes}` : minutes;
+  remainingSeconds -= minutes * 60;
+  const remainingSecondDisplay =
+    remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
+  return `${dayDisplay}:${hourDisplay}:${minuteDisplay}:${remainingSecondDisplay}`;
+}
+
+function renderDistance(distance) {
+  // 5878625373183.61 miles per light year
+  // 60 pixels per light year
+  return ((distance / 60) * 5878625373183.61).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
+
+const panSpeed = 250;
 function centerView(coords, centerShip) {
-  const panSpeed = 300;
   if (lockShip === true) {
     canvasWrapper.style.transition = `none`;
   } else {
-    canvasWrapper.style.transition = `transform ${panSpeed}ms ease-in-out`;
+    canvasWrapper.style.transition = `transform ${panSpeed}ms linear`;
   }
   let coordinates = coords;
   const newX = (coordinates.x - (gameContainerSize.width + 1) / 2) * -1;
@@ -213,28 +238,35 @@ function centerView(coords, centerShip) {
     }, panSpeed);
   }
 }
+let panning;
+function panMap(direction) {
+  const panStep = 10;
+  const directions = {
+    topLeft: { x: panStep, y: panStep },
+    top: { x: 0, y: panStep },
+    topRight: { x: panStep * -1, y: panStep },
+    right: { x: panStep * -1, y: 0 },
+    bottomRight: { x: panStep * -1, y: panStep * -1 },
+    bottom: { x: 0, y: panStep * -1 },
+    bottomLeft: { x: panStep, y: panStep * -1 },
+    left: { x: panStep, y: 0 }
+  };
+  lockShip = false;
+  const newCanvasX = canvasPos.x + directions[direction].x;
+  const maxCanvasX = (gamesize.width - gameContainerSize.width) * -1;
+  const newCanvasY = canvasPos.y + directions[direction].y;
+  const maxCanvasY = (gamesize.height - gameContainerSize.height) * -1 - 4;
 
-function convertTime(seconds) {
-  let remainingSeconds = parseInt(seconds, 10);
-  const days = Math.floor(remainingSeconds / (3600 * 24));
-  const dayDisplay = days < 10 ? `0${days}` : days;
-  remainingSeconds -= days * 3600 * 24;
-  const hours = Math.floor(remainingSeconds / 3600);
-  const hourDisplay = hours < 10 ? `0${hours}` : hours;
-  remainingSeconds -= hours * 3600;
-  const minutes = Math.floor(remainingSeconds / 60);
-  const minuteDisplay = minutes < 10 ? `0${minutes}` : minutes;
-  remainingSeconds -= minutes * 60;
-  const remainingSecondDisplay =
-    remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds;
-  return `${dayDisplay}:${hourDisplay}:${minuteDisplay}:${remainingSecondDisplay}`;
+  canvasPos.x =
+    newCanvasX > 0 ? 0 : newCanvasX < maxCanvasX ? maxCanvasX : newCanvasX;
+  canvasPos.y =
+    newCanvasY > 0 ? 0 : newCanvasY < maxCanvasY ? maxCanvasY : newCanvasY;
+  canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
+    canvasPos.y
+  }px)`;
+  panning = window.requestAnimationFrame(mil => panMap(direction));
 }
 
-function renderDistance(distance) {
-  // 5878625373183.61 miles per light year
-  // 60 pixels per light year
-  return ((distance / 60) * 5878625373183.61).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
+function stopMapPan() {
+  window.cancelAnimationFrame(panning);
 }
