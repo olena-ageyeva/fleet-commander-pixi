@@ -49,7 +49,7 @@ shipLock.addEventListener("click", () => {
   shipLock.classList.toggle("active");
 });
 
-const skipAnimation = true;
+const skipAnimation = false;
 const animationTime = {
   loadUITimeout: skipAnimation === true ? 0 : 500,
   showUITimeout: skipAnimation === true ? 0 : 2000,

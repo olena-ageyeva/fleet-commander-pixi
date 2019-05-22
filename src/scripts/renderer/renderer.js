@@ -36,15 +36,13 @@ const textStyle = new PIXI.TextStyle({
   fill: "white"
 });
 const voyageLine = new Graphics();
-voyageLine.resolution = 1;
-voyageLine.alpha = 1;
+voyageLine.lineStyle(2, 0x70ffe9);
 
 // attach canvas and containers
 canvasWrapper.appendChild(renderer.view);
-voyageLayer.addChild(voyageLine);
 stage.addChild(starContainer);
 stage.addChild(shipContainer);
-stage.addChild(voyageLayer);
+stage.addChild(voyageLine);
 
 // start ticker
 const ticker = new Ticker();
