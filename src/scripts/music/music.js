@@ -1,3 +1,5 @@
+const enableMusic = false;
+
 // GET PLAYER ELEMENTS
 const audPlayer = document.createElement("AUDIO");
 audPlayer.volume = 0.0;

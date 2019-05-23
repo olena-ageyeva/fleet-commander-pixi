@@ -37,14 +37,13 @@ const textStyle = new PIXI.TextStyle({
   fill: "white"
 });
 const voyageLine = new Graphics();
-voyageLine.lineStyle(1, 0x70ffe9);
+voyageLine.lineStyle(2, 0x70ffe9);
 voyageLine.rou;
 
 // attach canvas and containers
 canvasWrapper.appendChild(renderer.view);
 stage.addChild(starContainer);
 stage.addChild(shipContainer);
-// stage.addChild(voyageLine);
 voyageLayer.addChild(voyageLine);
 stage.addChild(voyageLayer);
 
@@ -111,7 +110,7 @@ renderer.view.addEventListener("click", function(event) {
     if (clickedOnce) {
       showCenterViewSprite(1, panSpeed, clickCoords, true);
     } else {
-      showCenterViewSprite(1, 0, clickCoords, false);
+      // showCenterViewSprite(1, 0, clickCoords, false);
       lockShip = false;
       clickedOnce = true;
       voyageLine.clear();
@@ -183,6 +182,9 @@ function setup() {
   // generate the universe
   universe = generateUniverse(gamesize, starDensity);
   starCount.innerText = `STARS ${universe.length.toLocaleString()}`;
+  universe.forEach(star => {
+    universeMap[star.id] = star;
+  });
 
   // place star sprites
   universe.forEach(starCoordinate => {

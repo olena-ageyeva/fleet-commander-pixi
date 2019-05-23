@@ -7,7 +7,7 @@ let frames = 60;
 let lastUpdate = performance.now();
 function play(deltaTime) {
   const now = performance.now();
-  const elapsed = (now - lastUpdate) / 16;
+  const elapsed = (now - lastUpdate) / 16.6666666666666667;
   lastUpdate = now;
   const delta = elapsed;
   let audioStopping = audPlayer.duration - audPlayer.currentTime <= 10;
@@ -44,6 +44,33 @@ function play(deltaTime) {
     ) {
       proxStar = star;
     }
+    if (selectedStar && star.id === selectedStar.id) {
+      if (!star.selected) {
+        star.selected = true;
+        const starNameOffset = star.message.width + 20;
+        let starNameStartY = star.y - 4.5;
+        if (star.y <= star.message.height + 5) {
+          starNameStartY = star.message.height;
+        }
+        if (star.y > gamesize.height - 14) {
+          starNameStartY = gamesize.height - 10;
+        }
+        let starNameStartX = star.x + 20;
+        if (star.x > gamesize.width - (starNameOffset + 10)) {
+          starNameStartX = star.x - starNameOffset;
+        }
+        if (star.x < starNameOffset + 10) {
+          starNameStartX = star.x + 20;
+        }
+        star.message.position.set(starNameStartX, starNameStartY);
+        stage.addChild(star.message);
+      }
+    } else {
+      if (star.selected) {
+        star.selected = false;
+        stage.removeChild(star.message);
+      }
+    }
   });
   if (selectedStar && proxStar) {
     if (
@@ -57,8 +84,8 @@ function play(deltaTime) {
       proxStar = undefined;
     }
   }
-  fleet.forEach((ship, index) => {
-    ship.getTravelData(delta);
+  fleet.forEach(ship => {
+    ship.getTravelData();
     const newShipX =
       ship.coordinates.x + ship.travelData.vector.magnitudeX * delta;
     const newShipY =
@@ -149,7 +176,7 @@ function play(deltaTime) {
         nameStartX = newShipX + 26;
       }
       ship.statsText.text = `ETA: ${convertTime(
-        Math.floor(ship.distanceToDestination / ship.velocity / 60)
+        Math.floor(ship.distanceToDestination / (ship.velocity * 60))
       )}\nDIST: ${renderDistance(ship.distanceToDestination)}\nDEST: ${
         ship.destination.name
       }\nVEL: ${renderVelocity(ship.velocity)}`;

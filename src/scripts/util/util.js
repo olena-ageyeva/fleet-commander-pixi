@@ -94,6 +94,25 @@ function getRandomStar(limit) {
   return universe[getRandomWholeNumber(0, universe.length - 1)];
 }
 
+function rand(length, ...ranges) {
+  let str = ""; // the string (initialized to "")
+  while (length--) {
+    // repeat this length of times
+    const ind = Math.floor(Math.random() * ranges.length); // get a random range from the ranges object
+    const min = ranges[ind][0].charCodeAt(0), // get the minimum char code allowed for this range
+      max = ranges[ind][1].charCodeAt(0); // get the maximum char code allowed for this range
+    const c = Math.floor(Math.random() * (max - min + 1)) + min; // get a random char code between min and max
+    str += String.fromCharCode(c); // convert it back into a character and append it to the string str
+  }
+  return str; // return str
+}
+
+function generateStarName() {
+  return `${rand(3, ["A", "Z"])}-${rand(4, ["G", "K"], ["0", "9"])}-${rand(2, [
+    "A",
+    "Z"
+  ])}`;
+}
 function makeShip(index) {
   const range = 2 * pixelsPerLightYear;
   const origin = getRandomStar();
@@ -122,9 +141,8 @@ function generateFleet() {
   return fleet;
 }
 
-function getStarCoordinate(name, size) {
+function getStarCoordinate(size) {
   return {
-    name,
     x: getRandomWholeNumber(starEdgeDistance, size.width),
     y: getRandomWholeNumber(starEdgeDistance, size.height)
   };
@@ -135,12 +153,13 @@ function generateUniverse(size, density) {
   const starCoords = [];
   for (let i = 0; i < stars; i++) {
     if (i === 0) {
-      starCoords.push(getStarCoordinate(`STAR-${i + 1}`, size));
+      const newCoordinate = getStarCoordinate(size);
+      starCoords.push(new Star(newCoordinate.x, newCoordinate.y));
     } else {
       let newCoordinate = undefined;
       let tries = 0;
       while (newCoordinate === undefined) {
-        newCoordinate = getStarCoordinate(`STAR-${i + 1}`, size);
+        newCoordinate = getStarCoordinate(size);
         for (let s = 0; s < starCoords.length; s++) {
           tries++;
           if (tries > starAttempts) {
@@ -159,7 +178,7 @@ function generateUniverse(size, density) {
           }
         }
       }
-      starCoords.push(newCoordinate);
+      starCoords.push(new Star(newCoordinate.x, newCoordinate.y));
     }
   }
   return starCoords;
@@ -204,7 +223,7 @@ function getStarRadius() {
 }
 
 function convertTime(seconds) {
-  let remainingSeconds = parseInt(seconds, 10);
+  let remainingSeconds = seconds;
   const days = Math.floor(remainingSeconds / (3600 * 24));
   const dayDisplay = days < 10 ? `0${days}` : days;
   remainingSeconds -= days * 3600 * 24;

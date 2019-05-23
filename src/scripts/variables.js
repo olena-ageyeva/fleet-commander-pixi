@@ -5,6 +5,7 @@ let selectedShip; // object: refernce to selected ship
 let selectedStar;
 let showVoyage = false; // boolean. draw voyage lines
 let universe; // array: all stars
+let universeMap = {}; // object of all stars for proximity calc without the need to loop
 let clickedOnce = false;
 let maxVolume = 0.3;
 const panSpeed = 500;
@@ -25,7 +26,7 @@ const starEdgeDistance = 30; // int: keep stars away from map edge
 // 30 pixels per light year
 const starProximity = 30; // int: min distance between stars
 const mouseProximity = 10; // int: mouse proximity for ship selection
-const mouseStarProximity = 10;
+const mouseStarProximity = 5;
 
 // object: initial position of game canvas
 const canvasPos = {

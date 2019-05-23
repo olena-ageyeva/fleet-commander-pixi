@@ -4,7 +4,7 @@ setTimeout(() => {
   canplay = true;
 }, 0);
 document.body.addEventListener("click", () => {
-  if (audPlayer.paused && canplay) {
+  if (audPlayer.paused && canplay && enableMusic) {
     console.log("play music");
 
     audPlayer.play();
