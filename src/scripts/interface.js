@@ -1,30 +1,50 @@
-const skipAnimation = false;
+const skipAnimation = true;
+let canplay = false;
+setTimeout(() => {
+  canplay = true;
+}, 0);
+document.body.addEventListener("click", () => {
+  if (audPlayer.paused && canplay) {
+    console.log("play music");
 
+    audPlayer.play();
+    canplay = false;
+  }
+});
+
+// CONTAINERS
 const canvasWrapper = document.getElementById("canvas__wrapper");
+const gameContainer = document.getElementById("game__container");
+const interfaceLoader = document.getElementById("interface_loader");
+const mainInterface = document.getElementById("interface");
+let gameContainerSize;
+
+// DATA DISPLAY
+const mapLoadingText = document.getElementById("map_loading_text");
 const fpsCounter = document.getElementById("fps");
 const shipCount = document.getElementById("shipCount");
 const starCount = document.getElementById("starCount");
-const gameContainer = document.getElementById("game__container");
-let gameContainerSize;
-const loadBar = document.getElementById("loader");
-const voyageToggle = document.getElementById("voyage_toggle");
-const snapshot = document.getElementById("snapshot");
-const mapLoadingText = document.getElementById("map_loading_text");
 
-const mainInterface = document.getElementById("interface");
-const interfaceLoader = document.getElementById("interface_loader");
+// UI
+const loadBar = document.getElementById("loader");
 const interfaceFader = document.getElementById("interface_fader");
 
-const devButton = document.getElementById("dev_console");
-const shipFocus = document.getElementById("ship_focus");
-const destinationFocus = document.getElementById("destination_focus");
-
-const shipLock = document.getElementById("ship_lock");
-const deselect = document.getElementById("deselect");
-
-snapshot.addEventListener("click", takeSnapshot);
+// MENU CONTROLS
+const voyageToggle = document.getElementById("voyage_toggle");
 voyageToggle.addEventListener("click", toggleVoyage);
 
+// HEADER CONTROLS
+const devButton = document.getElementById("dev_console");
+const listButton = document.getElementById("list");
+const launchButton = document.getElementById("launch");
+listButton.addEventListener("click", takeSnapshot);
+launchButton.addEventListener("click", newMission);
+
+// MAP CONTROLS
+const shipFocus = document.getElementById("ship_focus");
+const destinationFocus = document.getElementById("destination_focus");
+const shipLock = document.getElementById("ship_lock");
+const deselect = document.getElementById("deselect");
 shipFocus.addEventListener("click", () => {
   if (selectedShip) {
     lockShip = false;
@@ -39,18 +59,20 @@ destinationFocus.addEventListener("click", () => {
   }
 });
 
-deselect.addEventListener("click", () => {
-  if (selectedShip) {
-    lockShip = false;
-    selectedShip = undefined;
-  }
-});
-
 shipLock.addEventListener("click", () => {
   lockShip = !lockShip;
   shipLock.classList.toggle("active");
 });
 
+deselect.addEventListener("click", () => {
+  if (selectedShip) {
+    lockShip = false;
+    selectedShip = undefined;
+    selectedStar = undefined;
+  }
+});
+
+// ANIMATIONS
 const animationTime = {
   loadUITimeout: skipAnimation === true ? 0 : 500,
   showUITimeout: skipAnimation === true ? 0 : 2000,

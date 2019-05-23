@@ -24,7 +24,7 @@ const renderer = new Renderer({
 // create containers
 const shipContainer = new ParticleContainer();
 const stage = new Container();
-const starContainer = new Container();
+const starContainer = new ParticleContainer();
 const voyageLayer = new Container();
 
 // create graphics and text
@@ -37,13 +37,16 @@ const textStyle = new PIXI.TextStyle({
   fill: "white"
 });
 const voyageLine = new Graphics();
-voyageLine.lineStyle(2, 0x70ffe9);
+voyageLine.lineStyle(1, 0x70ffe9);
+voyageLine.rou;
 
 // attach canvas and containers
 canvasWrapper.appendChild(renderer.view);
 stage.addChild(starContainer);
 stage.addChild(shipContainer);
-stage.addChild(voyageLine);
+// stage.addChild(voyageLine);
+voyageLayer.addChild(voyageLine);
+stage.addChild(voyageLayer);
 
 // start ticker
 const ticker = new Ticker();
@@ -83,46 +86,99 @@ renderer.view.addEventListener("click", function(event) {
       ).distance < mouseProximity
     );
   })[0];
-  if (clickedShip) {
+  const clickedStar = universe.filter(star => {
+    return (
+      distanceAndAngleBetweenTwoPoints(
+        clickCoords.x,
+        clickCoords.y,
+        star.x,
+        star.y
+      ).distance < mouseStarProximity
+    );
+  })[0];
+  if (clickedShip || clickedStar) {
     voyageLine.clear();
     lockShip = false;
-    selectedShip = clickedShip;
-    centerView(clickedShip.coordinates, clickedShip);
+    if (clickedShip) {
+      selectedShip = clickedShip;
+      centerView(clickedShip.coordinates, clickedShip);
+    }
+    if (clickedStar) {
+      selectedStar = clickedStar;
+      centerView(clickedStar);
+    }
   } else {
-    voyageLine.clear();
-    selectedShip = undefined;
+    if (clickedOnce) {
+      showCenterViewSprite(1, panSpeed, clickCoords, true);
+    } else {
+      showCenterViewSprite(1, 0, clickCoords, false);
+      lockShip = false;
+      clickedOnce = true;
+      voyageLine.clear();
+      // selectedShip = undefined;
+      setTimeout(() => {
+        clickedOnce = false;
+      }, 300);
+    }
   }
 });
+
+function showCenterViewSprite(alpha, hideDelay, coords, centerNow) {
+  clearCenterViewSprite = false;
+  centerViewSprite.x = coords.x;
+  centerViewSprite.y = coords.y;
+  centerViewSprite.alpha = alpha;
+  centerViewSprite.visible = true;
+  if (centerNow) {
+    centerView(coords);
+  }
+  setTimeout(() => {
+    clearCenterViewSprite = true;
+  }, hideDelay);
+}
 
 // load assets
 Loader.add([
   "assets/sprites/ship.png",
   "assets/sprites/ship-selected.png",
   "assets/sprites/ship-selection-ring.png",
+  "assets/sprites/star-selection-ring.png",
+  "assets/sprites/star-hover-ring.png",
   "assets/sprites/star.png",
-  "assets/sprites/ship-selection-ring-dashed.png",
-  "assets/sprites/ship-selection-ring-dashed2.png"
+  "assets/sprites/center-view-box.png"
 ]).load(setup);
 
 // declate textures
 let unselectShipTexture;
 let selectedShipTexture;
 let selectionRingTexture;
+let starSelectionRingTexture;
+let starHoverRingTexture;
+
 let starTexture;
+let centerViewTexture;
 
 // declare sprites
 let destinationSprite;
 let selectionSprite;
+let starSelectionSprite;
+let starHoverSprite;
 let hoverSprite;
 let selectedShipSprite;
+let centerViewSprite;
 
 function setup() {
   // define textures
   unselectShipTexture = Resources["assets/sprites/ship.png"].texture;
   selectedShipTexture = Resources["assets/sprites/ship-selected.png"].texture;
   selectionRingTexture =
-    Resources["assets/sprites/ship-selection-ring-dashed2.png"].texture;
+    Resources["assets/sprites/ship-selection-ring.png"].texture;
+  starSelectionRingTexture =
+    Resources["assets/sprites/star-selection-ring.png"].texture;
+  starHoverRingTexture =
+    Resources["assets/sprites/star-hover-ring.png"].texture;
   starTexture = Resources["assets/sprites/star.png"].texture;
+  centerViewTexture = Resources["assets/sprites/center-view-box.png"].texture;
 
   // generate the universe
   universe = generateUniverse(gamesize, starDensity);
@@ -138,9 +194,10 @@ function setup() {
     star.height = starSize;
     star.width = starSize;
     star.resolution = 1;
+    star.cacheAsBitmap = true;
     starContainer.addChild(star);
   });
-  starContainer.cacheAsBitmap = true;
+  // starContainer.cacheAsBitmap = true;
 
   fleet = generateFleet();
   fleet.forEach(ship => {
@@ -171,6 +228,16 @@ function setup() {
   selectionSprite.anchor.set(0.5);
   selectionSprite.visible = false;
 
+  starSelectionSprite = new Sprite(starSelectionRingTexture);
+  starSelectionSprite.anchor.set(0.5);
+  starSelectionSprite.visible = false;
+  starSelectionSprite.height = 30;
+  starSelectionSprite.width = 30;
+
+  starHoverSprite = new Sprite(starHoverRingTexture);
+  starHoverSprite.anchor.set(0.5);
+  starHoverSprite.visible = false;
+
   hoverSprite = new Sprite(selectedShipTexture);
   hoverSprite.anchor.set(0.5);
   hoverSprite.height = 20;
@@ -183,11 +250,18 @@ function setup() {
   selectedShipSprite.width = 10;
   selectedShipSprite.visible = false;
 
+  centerViewSprite = new Sprite(centerViewTexture);
+  centerViewSprite.anchor.set(0.5);
+  centerViewSprite.visible = false;
+
   // attach all sprites
   stage.addChild(selectionSprite);
+  stage.addChild(starSelectionSprite);
+  stage.addChild(starHoverSprite);
   stage.addChild(destinationSprite);
   stage.addChild(hoverSprite);
   stage.addChild(selectedShipSprite);
+  stage.addChild(centerViewSprite);
 
   //Start the game loop
   ticker.add(delta => gameLoop(delta));

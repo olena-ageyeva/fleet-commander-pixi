@@ -11,7 +11,38 @@ function generateUUID() {
 }
 
 function takeSnapshot() {
-  const image = renderer.extract.image(starContainer);
+  const rStars = [...universe];
+  const starCircles = [];
+  rStars.forEach(rStar => {
+    const starCircle = new Graphics();
+    starCircle.beginFill(0x70ffe9, 1);
+    starCircle.drawCircle(rStar.x, rStar.y, 5);
+    starCircle.endFill();
+    voyageLayer.addChild(starCircle);
+    starCircles.push(starCircle);
+  });
+  while (rStars.length > 0) {
+    const currentStar = rStars[0];
+    const closeStars = rStars.filter(
+      cStar =>
+        distanceAndAngleBetweenTwoPoints(
+          currentStar.x,
+          currentStar.y,
+          cStar.x,
+          cStar.y
+        ).distance <=
+        pixelsPerLightYear * 2
+    );
+    closeStars.forEach(cStar => {
+      voyageLine.moveTo(currentStar.x, currentStar.y);
+      voyageLine.lineTo(cStar.x, cStar.y);
+    });
+    rStars.shift();
+  }
+  const image = renderer.extract.image(voyageLayer);
+  showVoyage = false;
+  voyageLine.clear();
+  starCircles.forEach(starCircle => starCircle.destroy());
   image.id = "voyage_image";
   document.body.appendChild(image);
   setTimeout(() => {
@@ -64,7 +95,7 @@ function getRandomStar(limit) {
 }
 
 function makeShip(index) {
-  const range = 50 * 60;
+  const range = 2 * pixelsPerLightYear;
   const origin = getRandomStar();
   const destination = getRandomStar({ distance: range, origin });
   const name = `${index % 2 === 0 ? "SHIP" : "SHIPPPPPPPP"}-${index + 1}`;
@@ -151,7 +182,7 @@ function getTravelData(ship, milliseconds) {
 }
 
 function getStarRadius() {
-  // const starSizes = [2, 2.5, 3, 4, 5];
+  // const starSizes = [2, 4, 4, 4, 4];
   const starSizes = [4, 4, 4, 4, 4];
 
   const random = Math.random();
@@ -189,20 +220,31 @@ function convertTime(seconds) {
 }
 
 function renderDistance(distance) {
-  // 5878625373183.61 miles per light year
-  // 60 pixels per light year
-  return ((distance / 60) * 5878625373183.61).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  });
+  return `${((distance / pixelsPerLightYear) * lightYear).toLocaleString(
+    "en-US",
+    {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }
+  )} mi`;
+  return distance;
 }
 
-const panSpeed = 250;
+function renderVelocity(velocity) {
+  const mis = velocity * 60 * (lightYear / pixelsPerLightYear);
+  const c = mis / lightSecond;
+  const velDisplay = c >= 1 ? c : mis;
+  return `${velDisplay.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })} ${c >= 1 ? "c" : "mi/s"}`;
+}
+
 function centerView(coords, centerShip) {
   if (lockShip === true) {
     canvasWrapper.style.transition = `none`;
   } else {
-    canvasWrapper.style.transition = `transform ${panSpeed}ms linear`;
+    canvasWrapper.style.transition = `transform ${panSpeed}ms ease-in-out`;
   }
   let coordinates = coords;
   const newX = (coordinates.x - (gameContainerSize.width + 1) / 2) * -1;
@@ -238,6 +280,7 @@ function centerView(coords, centerShip) {
     }, panSpeed);
   }
 }
+
 let panning;
 function panMap(direction) {
   const panStep = 10;
@@ -251,7 +294,6 @@ function panMap(direction) {
     bottomLeft: { x: panStep, y: panStep * -1 },
     left: { x: panStep, y: 0 }
   };
-  lockShip = false;
   const newCanvasX = canvasPos.x + directions[direction].x;
   const maxCanvasX = (gamesize.width - gameContainerSize.width) * -1;
   const newCanvasY = canvasPos.y + directions[direction].y;
@@ -261,6 +303,8 @@ function panMap(direction) {
     newCanvasX > 0 ? 0 : newCanvasX < maxCanvasX ? maxCanvasX : newCanvasX;
   canvasPos.y =
     newCanvasY > 0 ? 0 : newCanvasY < maxCanvasY ? maxCanvasY : newCanvasY;
+  lockShip = false;
+  canvasWrapper.style.transition = `none`;
   canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
     canvasPos.y
   }px)`;
@@ -269,4 +313,10 @@ function panMap(direction) {
 
 function stopMapPan() {
   window.cancelAnimationFrame(panning);
+}
+
+function newMission() {
+  if (selectedShip !== undefined) {
+    selectedShip.getNewDestination();
+  }
 }
