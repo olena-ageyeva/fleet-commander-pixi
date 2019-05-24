@@ -15,9 +15,9 @@ function takeSnapshot() {
   const starCircles = [];
   rStars.forEach(rStar => {
     const starCircle = new Graphics();
-    starCircle.beginFill(0x70ffe9, 1);
+    // starCircle.beginFill(0x70ffe9, 1);
     starCircle.drawCircle(rStar.x, rStar.y, 5);
-    starCircle.endFill();
+    // starCircle.endFill();
     voyageLayer.addChild(starCircle);
     starCircles.push(starCircle);
   });
@@ -50,9 +50,15 @@ function takeSnapshot() {
   }, 5000);
 }
 
-function toggleVoyage() {
-  showVoyage = !showVoyage;
+function setVoyage(on) {
   voyageLine.clear();
+  if (on) {
+    showVoyage = true;
+    voyageToggle.classList.add("active");
+  } else {
+    showVoyage = false;
+    voyageToggle.classList.remove("active");
+  }
 }
 
 function getRandomWholeNumber(min, max) {
@@ -113,11 +119,17 @@ function generateStarName() {
     "Z"
   ])}`;
 }
+
+function getRandomArrayElement(array) {
+  return array[getRandomWholeNumber(0, array.length - 1)];
+}
+
 function makeShip(index) {
-  const range = 2 * pixelsPerLightYear;
   const origin = getRandomStar();
-  const destination = getRandomStar({ distance: range, origin });
-  const name = `${index % 2 === 0 ? "SHIP" : "SHIPPPPPPPP"}-${index + 1}`;
+  const destination = getRandomStar({ distance: shipRange, origin });
+  const name = `${getRandomArrayElement(
+    shipNamePrefixes
+  )} ${getRandomArrayElement(shipNames)}`;
   const distanceToDestination = distanceAndAngleBetweenTwoPoints(
     origin.x,
     origin.y,
@@ -129,7 +141,7 @@ function makeShip(index) {
     distanceToDestination,
     name,
     origin,
-    range
+    shipRange
   );
   return newShip;
 }
@@ -293,10 +305,20 @@ function centerView(coords, centerShip) {
   canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
     canvasPos.y
   }px)`;
-  if (centerShip) {
+  if (centerShip && autoLock) {
     setTimeout(() => {
-      lockShip = true;
+      setLockShip(true);
     }, panSpeed);
+  }
+}
+
+function setLockShip(lock) {
+  if (lock) {
+    lockShip = true;
+    shipLock.classList.add("active");
+  } else {
+    lockShip = false;
+    shipLock.classList.remove("active");
   }
 }
 
@@ -322,7 +344,7 @@ function panMap(direction) {
     newCanvasX > 0 ? 0 : newCanvasX < maxCanvasX ? maxCanvasX : newCanvasX;
   canvasPos.y =
     newCanvasY > 0 ? 0 : newCanvasY < maxCanvasY ? maxCanvasY : newCanvasY;
-  lockShip = false;
+  setLockShip(false);
   canvasWrapper.style.transition = `none`;
   canvasWrapper.style.transform = `translate(${canvasPos.x}px,${
     canvasPos.y
@@ -337,5 +359,33 @@ function stopMapPan() {
 function newMission() {
   if (selectedShip !== undefined) {
     selectedShip.getNewDestination();
+  }
+}
+
+function startShipScan() {
+  if (selectedShip) {
+    const scanCircle = new Graphics();
+    scanCircle.lineStyle(2, 0x70ffe9);
+
+    const newScan = {
+      coordinates: selectedShip.coordinates,
+      scanRange: selectedShip.scanRange,
+      scanRadius: 0,
+      scanSpeed: selectedShip.scanSpeed,
+      shipID: selectedShip.id,
+      graphics: scanCircle,
+      id: generateUUID()
+    };
+    selectedShip.scanForDestinations(newScan);
+    scans[newScan.id] = newScan;
+  }
+}
+
+function setShipStats(on) {
+  displayStats = on;
+  if (displayStats) {
+    shipStatsDisplay.classList.add("active");
+  } else {
+    shipStatsDisplay.classList.remove("active");
   }
 }

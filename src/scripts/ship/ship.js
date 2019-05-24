@@ -2,8 +2,9 @@ class Ship {
   constructor(destination, distanceToDestination, name, origin, range) {
     this.baseVelocity = baseShipSpeed;
     this.coordinates = { x: origin.x, y: origin.y };
-    this.cSpeed = 10000;
+    this.cSpeed = cSpeed;
     this.destination = destination;
+    this.destinations = [];
     this.directionX = origin.x > destination.x ? "west" : "east";
     this.directionY = origin.y > destination.y ? "north" : "south";
     this.distanceToDestination = distanceToDestination;
@@ -11,13 +12,18 @@ class Ship {
     this.name = name;
     this.origin = origin;
     this.range = range;
+    this.scanning = false;
+    this.scanRange = this.range;
+    this.scanSpeed = 1;
     this.setSelected = false;
     this.travelData = {};
-    this.travelling = true;
+    this.travelling = false;
     this.velocity = this.baseVelocity * baseSpeedMultiplier * this.cSpeed; // 1: 1 pixel per second base
     this.voyages = [{ origin, destination }];
     this.getTravelData = this.getTravelData.bind(this);
     this.getNewDestination = this.getNewDestination.bind(this);
+    this.resetScanner = this.resetScanner.bind(this);
+    this.scanForDestinations = this.scanForDestinations.bind(this);
   }
 
   getTravelData() {
@@ -45,5 +51,27 @@ class Ship {
       this.voyages.shift();
     }
     this.travelling = true;
+  }
+
+  scanForDestinations(currentScan) {
+    this.currentScan = currentScan;
+    this.scanning = true;
+    console.log("scanning for destinations");
+    const starsInRange = universe.filter(star => {
+      return (
+        distanceAndAngleBetweenTwoPoints(
+          star.x,
+          star.y,
+          this.coordinates.x,
+          this.coordinates.y
+        ).distance <= this.range
+      );
+    });
+    console.log(starsInRange);
+    this.destinations = starsInRange;
+  }
+
+  resetScanner() {
+    this.scanning = false;
   }
 }

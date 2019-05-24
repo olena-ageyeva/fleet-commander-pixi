@@ -1,14 +1,12 @@
-const skipAnimation = true;
-let canplay = false;
 setTimeout(() => {
   canplay = true;
-}, 0);
+}, 10000);
 document.body.addEventListener("click", () => {
   if (audPlayer.paused && canplay && enableMusic) {
-    console.log("play music");
-
-    audPlayer.play();
     canplay = false;
+    setTimeout(() => {
+      audPlayer.play();
+    }, 10000);
   }
 });
 
@@ -30,8 +28,18 @@ const loadBar = document.getElementById("loader");
 const interfaceFader = document.getElementById("interface_fader");
 
 // MENU CONTROLS
+const shipStatsDisplay = document.getElementById("stats_display");
+shipStatsDisplay.addEventListener("click", () => {
+  setShipStats(!displayStats);
+});
+
+const shipScan = document.getElementById("ship_scan");
+shipScan.addEventListener("click", startShipScan);
+
 const voyageToggle = document.getElementById("voyage_toggle");
-voyageToggle.addEventListener("click", toggleVoyage);
+voyageToggle.addEventListener("click", () =>
+  setVoyage(selectedShip !== undefined && !showVoyage)
+);
 
 // HEADER CONTROLS
 const devButton = document.getElementById("dev_console");
@@ -47,27 +55,36 @@ const shipLock = document.getElementById("ship_lock");
 const deselect = document.getElementById("deselect");
 shipFocus.addEventListener("click", () => {
   if (selectedShip) {
-    lockShip = false;
+    setLockShip(false);
     centerView(selectedShip.coordinates, selectedShip);
   }
 });
 
 destinationFocus.addEventListener("click", () => {
   if (selectedShip) {
-    lockShip = false;
+    setLockShip(false);
     centerView(selectedShip.destination);
   }
 });
 
 shipLock.addEventListener("click", () => {
-  lockShip = !lockShip;
-  shipLock.classList.toggle("active");
+  if (selectedShip && !lockShip) {
+    shipLock.classList.add("active");
+    centerView(selectedShip.coordinates, selectedShip);
+  } else {
+    setLockShip(false);
+  }
 });
 
 deselect.addEventListener("click", () => {
+  setShipStats(false);
   if (selectedShip) {
-    lockShip = false;
+    setVoyage(false);
+    setLockShip(false);
     selectedShip = undefined;
+    selectedStar = undefined;
+  }
+  if (selectedStar) {
     selectedStar = undefined;
   }
 });

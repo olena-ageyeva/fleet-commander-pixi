@@ -1,5 +1,3 @@
-const enableMusic = false;
-
 // GET PLAYER ELEMENTS
 const audPlayer = document.createElement("AUDIO");
 audPlayer.volume = 0.0;
@@ -21,7 +19,7 @@ const tracks = [
 ];
 
 // INITIALIZE CURRENT TRACK
-let currentTrack;
+// let currentTrack;
 
 // WHEN PAGE LOADS, CHECK FOR PREVIOUS SESSION AND LOAD THAT TRACK.
 // IF NO PREVIOUS SESSION, LOAD THE FIRST TRACK

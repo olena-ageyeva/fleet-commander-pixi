@@ -22,10 +22,11 @@ const renderer = new Renderer({
 });
 
 // create containers
-const shipContainer = new ParticleContainer();
-const stage = new Container();
-const starContainer = new ParticleContainer();
-const voyageLayer = new Container();
+const shipContainer = new ParticleContainer(); // all ship dots
+const stage = new Container(); // all dynamic sprites
+const starContainer = new ParticleContainer(); // all stars
+const voyageLayer = new Container(); // all voyage graphics
+const scanLayer = new Container(); // all voyage graphics
 
 // create graphics and text
 const textStyle = new PIXI.TextStyle({
@@ -37,15 +38,22 @@ const textStyle = new PIXI.TextStyle({
   fill: "white"
 });
 const voyageLine = new Graphics();
-voyageLine.lineStyle(2, 0x70ffe9);
-voyageLine.rou;
+voyageLine.lineStyle(3, 0x70ffe9);
+
+const destinationLine = new Graphics();
+destinationLine.lineStyle(1, 0xffffff);
+
+// const scanCircle = new Graphics();
+// scanCircle.lineStyle(2, 0x70ffe9);
 
 // attach canvas and containers
 canvasWrapper.appendChild(renderer.view);
 stage.addChild(starContainer);
 stage.addChild(shipContainer);
-voyageLayer.addChild(voyageLine);
 stage.addChild(voyageLayer);
+stage.addChild(scanLayer);
+voyageLayer.addChild(voyageLine);
+voyageLayer.addChild(destinationLine);
 
 // start ticker
 const ticker = new Ticker();
@@ -96,25 +104,26 @@ renderer.view.addEventListener("click", function(event) {
     );
   })[0];
   if (clickedShip || clickedStar) {
-    voyageLine.clear();
-    lockShip = false;
-    if (clickedShip) {
-      selectedShip = clickedShip;
-      centerView(clickedShip.coordinates, clickedShip);
-    }
+    setVoyage(clickedShip !== undefined || selectedShip !== undefined);
+    setLockShip(false);
     if (clickedStar) {
       selectedStar = clickedStar;
       centerView(clickedStar);
+    }
+    if (clickedShip) {
+      setShipStats(true);
+      selectedShip = clickedShip;
+      centerView(clickedShip.coordinates, clickedShip);
+      if (!selectedStar) {
+        selectedStar = universeMap[clickedShip.destination.id];
+      }
     }
   } else {
     if (clickedOnce) {
       showCenterViewSprite(1, panSpeed, clickCoords, true);
     } else {
-      // showCenterViewSprite(1, 0, clickCoords, false);
-      lockShip = false;
+      setLockShip(false);
       clickedOnce = true;
-      voyageLine.clear();
-      // selectedShip = undefined;
       setTimeout(() => {
         clickedOnce = false;
       }, 300);
@@ -182,6 +191,7 @@ function setup() {
   // generate the universe
   universe = generateUniverse(gamesize, starDensity);
   starCount.innerText = `STARS ${universe.length.toLocaleString()}`;
+
   universe.forEach(star => {
     universeMap[star.id] = star;
   });
@@ -199,7 +209,6 @@ function setup() {
     star.cacheAsBitmap = true;
     starContainer.addChild(star);
   });
-  // starContainer.cacheAsBitmap = true;
 
   fleet = generateFleet();
   fleet.forEach(ship => {
@@ -210,6 +219,9 @@ function setup() {
     ship.sprite.height = 6;
     ship.sprite.width = 6;
 
+    ship.sprite.x = ship.coordinates.x;
+    ship.sprite.y = ship.coordinates.y;
+
     // add message
     ship.message = new Text(ship.name, textStyle);
     ship.statsText = new Text("STATUS: UNKNOWN", textStyle);
@@ -217,6 +229,10 @@ function setup() {
     ship.statsText.resolution = 2;
 
     shipContainer.addChild(ship.sprite);
+  });
+
+  fleet.forEach(ship => {
+    fleetMap[ship.id] = ship;
   });
 
   // create sprites

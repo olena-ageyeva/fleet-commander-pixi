@@ -44,7 +44,7 @@ export function setup() {
     })[0];
     if (clickedShip) {
       voyageLine.clear();
-      lockShip = false;
+      setLockShip(false);
       selectedShip = clickedShip;
       centerView(clickedShip.coordinates, clickedShip);
     } else {

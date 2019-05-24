@@ -41,7 +41,7 @@ export function centerView(coords, centerShip) {
   }px)`;
   if (centerShip) {
     setTimeout(() => {
-      lockShip = true;
+      setLockShip(true);
     }, 250);
   }
 }

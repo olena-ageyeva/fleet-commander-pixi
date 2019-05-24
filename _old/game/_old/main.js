@@ -71,7 +71,7 @@ voyageToggle.addEventListener("click", toggleVoyage);
 // SELECT A SHIP
 shipFocus.addEventListener("click", () => {
   if (selectedShip) {
-    lockShip = false;
+    setLockShip(false);
     centerView(selectedShip.coordinates, selectedShip);
   }
 });
@@ -79,7 +79,7 @@ shipFocus.addEventListener("click", () => {
 // FOCUS ON DESTINATION
 destinationFocus.addEventListener("click", () => {
   if (selectedShip) {
-    lockShip = false;
+    setLockShip(false);
     centerView(selectedShip.destination);
   }
 });
@@ -87,7 +87,7 @@ destinationFocus.addEventListener("click", () => {
 // DESELECT
 deselect.addEventListener("click", () => {
   if (selectedShip) {
-    lockShip = false;
+    setLockShip(false);
     selectedShip = undefined;
   }
 });
