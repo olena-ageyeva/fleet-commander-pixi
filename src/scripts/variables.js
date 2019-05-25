@@ -23,7 +23,7 @@ const textAlphaDelay = 20;
 /********** MUSIC **********/
 let canplay = false;
 let currentTrack;
-const enableMusic = true;
+const enableMusic = false;
 let maxVolume = 0.3;
 /********** MUSIC **********/
 
@@ -54,7 +54,7 @@ let universeMap = {}; // object of all stars for proximity calc without the need
 
 /********** UI **********/
 let mouse; // object: mouse position. {x, y}
-const skipAnimation = false;
+const skipAnimation = true;
 /********** UI **********/
 
 /********** FPS **********/

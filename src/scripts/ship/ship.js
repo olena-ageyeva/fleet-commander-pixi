@@ -56,7 +56,6 @@ class Ship {
   scanForDestinations(currentScan) {
     this.currentScan = currentScan;
     this.scanning = true;
-    console.log("scanning for destinations");
     const starsInRange = universe.filter(star => {
       return (
         distanceAndAngleBetweenTwoPoints(
@@ -67,7 +66,6 @@ class Ship {
         ).distance <= this.range
       );
     });
-    console.log(starsInRange);
     this.destinations = starsInRange;
   }
 

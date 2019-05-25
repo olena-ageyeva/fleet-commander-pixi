@@ -46,8 +46,17 @@ function play(deltaTime) {
   frames++;
   if (frames >= 60) {
     frames = 0;
-    // const fps = ticker.FPS;
-    fpsCounter.innerText = `FPS ${fps}`;
+    const tickerFPS = ticker.FPS;
+    fpsCounter.innerText = `FPS ${fps} TICKER ${tickerFPS.toLocaleString(
+      "en-US",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    )} DELTA ${delta.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
     shipCount.innerText = `SHIPS ${fleet.length}`;
   }
   // FRAME RATE
@@ -345,9 +354,10 @@ function play(deltaTime) {
         scan.coordinates.y,
         scan.scanRadius
       );
-      scan.scanRadius += scan.scanSpeed;
+      scan.scanRadius += scan.scanSpeed * delta;
       if (scan.scanRadius >= scan.scanRange || scan.graphics.alpha <= 0) {
         scanLayer.removeChild(scan.graphics);
+        fleetMap[scan.shipID].scanning = false;
         delete scans[scan.id];
         delete activeScans[scan.id];
       }

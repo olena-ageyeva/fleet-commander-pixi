@@ -363,7 +363,7 @@ function newMission() {
 }
 
 function startShipScan() {
-  if (selectedShip) {
+  if (selectedShip && !selectedShip.scanning) {
     const scanCircle = new Graphics();
     scanCircle.lineStyle(2, 0x70ffe9);
 
