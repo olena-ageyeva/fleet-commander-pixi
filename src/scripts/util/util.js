@@ -155,8 +155,8 @@ function generateFleet() {
 
 function getStarCoordinate(size) {
   return {
-    x: getRandomWholeNumber(starEdgeDistance, size.width),
-    y: getRandomWholeNumber(starEdgeDistance, size.height)
+    x: getRandomWholeNumber(starEdgeDistance, size.width - starEdgeDistance),
+    y: getRandomWholeNumber(starEdgeDistance, size.height - starEdgeDistance)
   };
 }
 

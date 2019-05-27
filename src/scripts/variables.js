@@ -34,7 +34,7 @@ const cSpeed = 10000;
 let displayStats = true;
 let fleet; // array: all ships
 const fleetMap = {};
-const fleetSize = 100; // int: size of initial fleet array
+const fleetSize = 1; // int: size of initial fleet array
 const mouseProximity = 10; // int: mouse proximity for ship selection
 let selectedShip; // object: refernce to selected ship
 const shipRange = 2 * pixelsPerLightYear;
@@ -46,7 +46,7 @@ const mouseStarProximity = 5;
 let selectedStar;
 const starAttempts = 750000000; // int: max loop for star generation.
 const starDensity = 9000; // int: density of stars. higer values = fewer stars
-const starEdgeDistance = 30; // int: keep stars away from map edge
+const starEdgeDistance = 50; // int: keep stars away from map edge
 const starProximity = 30; // int: min distance between stars
 let universe; // array: all stars
 let universeMap = {}; // object of all stars for proximity calc without the need to loop

@@ -13,15 +13,6 @@ function play(deltaTime) {
   const delta = elapsed;
   // DELTA
 
-  // FPS
-  // const fpsNow = performance.now();
-  // while (times.length > 0 && times[0] <= fpsNow - 1000) {
-  //   times.shift();
-  // }
-  // times.push(fpsNow);
-  // fps = times.length;
-  // FPS
-
   // AUDIO
   let audioStopping = audPlayer.duration - audPlayer.currentTime <= 10;
   if (!audPlayer.paused && audioStopping) {
@@ -67,47 +58,53 @@ function play(deltaTime) {
   // PROXIMITY: Used to add hover sprites
 
   // STARS: Loop through stars. Mark for hover. Display name.
-  universe.forEach(star => {
+  for (let s = 0; s < universe.length; s++) {
+    // universe.forEach(star => {
     if (
       mouse &&
-      distanceAndAngleBetweenTwoPoints(mouse.x, mouse.y, star.x, star.y)
-        .distance < mouseStarProximity
+      distanceAndAngleBetweenTwoPoints(
+        mouse.x,
+        mouse.y,
+        universe[s].x,
+        universe[s].y
+      ).distance < mouseStarProximity
     ) {
-      proxStar = star;
+      proxStar = universe[s];
     }
-    if (selectedStar && star.id === selectedStar.id) {
-      if (!star.selected) {
-        star.selected = true;
-        const starNameOffset = star.message.width + 20;
-        let starNameStartY = star.y - 4.5;
-        if (star.y <= star.message.height + 5) {
-          starNameStartY = star.message.height;
+    if (selectedStar && universe[s].id === selectedStar.id) {
+      if (!universe[s].selected) {
+        universe[s].selected = true;
+        const starNameOffset = universe[s].message.width + 20;
+        let starNameStartY = universe[s].y - 4.5;
+        if (universe[s].y <= universe[s].message.height + 5) {
+          starNameStartY = universe[s].message.height;
         }
-        if (star.y > gamesize.height - 14) {
+        if (universe[s].y > gamesize.height - 14) {
           starNameStartY = gamesize.height - 10;
         }
-        let starNameStartX = star.x + 20;
-        if (star.x > gamesize.width - (starNameOffset + 10)) {
-          starNameStartX = star.x - starNameOffset;
+        let starNameStartX = universe[s].x + 20;
+        if (universe[s].x > gamesize.width - (starNameOffset + 10)) {
+          starNameStartX = universe[s].x - starNameOffset;
         }
-        if (star.x < starNameOffset + 10) {
-          starNameStartX = star.x + 20;
+        if (universe[s].x < starNameOffset + 10) {
+          starNameStartX = universe[s].x + 20;
         }
-        star.message.position.set(starNameStartX, starNameStartY);
-        star.message.resolution = 2;
-        star.message.alpha = 0;
-        stage.addChild(star.message);
+        universe[s].message.position.set(starNameStartX, starNameStartY);
+        universe[s].message.resolution = 2;
+        universe[s].message.alpha = 0;
+        stage.addChild(universe[s].message);
         setTimeout(() => {
-          star.message.alpha = 1;
+          universe[s].message.alpha = 1;
         }, textAlphaDelay);
       }
     } else {
-      if (star.selected) {
-        star.selected = false;
-        stage.removeChild(star.message);
+      if (universe[s].selected) {
+        universe[s].selected = false;
+        stage.removeChild(universe[s].message);
       }
     }
-  });
+    // });
+  }
   if (selectedStar && proxStar) {
     if (
       distanceAndAngleBetweenTwoPoints(
@@ -123,31 +120,32 @@ function play(deltaTime) {
   // STARS: Loop through stars. Mark for hover. Display name.
 
   // SHIPS: Loop through ships. Mark for hover. Display text. Draw line.
-  fleet.forEach(ship => {
-    ship.getTravelData();
+  for (let f = 0; f < fleet.length; f++) {
+    // fleet.forEach(ship => {
+    fleet[f].getTravelData();
     const newShipX =
-      ship.coordinates.x + ship.travelData.vector.magnitudeX * delta;
+      fleet[f].coordinates.x + fleet[f].travelData.vector.magnitudeX * delta;
     const newShipY =
-      ship.coordinates.y + ship.travelData.vector.magnitudeY * delta;
-    const newDirectionX = newShipX > ship.destination.x ? "west" : "east";
-    const newDirectionY = newShipY > ship.destination.y ? "north" : "south";
-    if (ship.travelling) {
+      fleet[f].coordinates.y + fleet[f].travelData.vector.magnitudeY * delta;
+    const newDirectionX = newShipX > fleet[f].destination.x ? "west" : "east";
+    const newDirectionY = newShipY > fleet[f].destination.y ? "north" : "south";
+    if (fleet[f].travelling) {
       if (
-        newDirectionX !== ship.directionX ||
-        newDirectionY !== ship.directionY
+        newDirectionX !== fleet[f].directionX ||
+        newDirectionY !== fleet[f].directionY
       ) {
-        ship.distanceToDestination = 0;
-        ship.coordinates.x = ship.destination.x;
-        ship.coordinates.y = ship.destination.y;
+        fleet[f].distanceToDestination = 0;
+        fleet[f].coordinates.x = fleet[f].destination.x;
+        fleet[f].coordinates.y = fleet[f].destination.y;
       }
 
-      if (ship.distanceToDestination <= 0) {
-        ship.travelling = false;
-        ship.getNewDestination();
+      if (fleet[f].distanceToDestination <= 0) {
+        fleet[f].travelling = false;
+        fleet[f].getNewDestination();
       } else {
-        ship.coordinates = { x: newShipX, y: newShipY };
-        ship.sprite.x = newShipX;
-        ship.sprite.y = newShipY;
+        fleet[f].coordinates = { x: newShipX, y: newShipY };
+        fleet[f].sprite.x = newShipX;
+        fleet[f].sprite.y = newShipY;
       }
     }
     if (
@@ -155,65 +153,74 @@ function play(deltaTime) {
       distanceAndAngleBetweenTwoPoints(
         mouse.x,
         mouse.y,
-        ship.coordinates.x,
-        ship.coordinates.y
+        fleet[f].coordinates.x,
+        fleet[f].coordinates.y
       ).distance < mouseProximity
     ) {
-      proxShip = ship;
+      proxShip = fleet[f];
     }
-    if (selectedShip && ship.id === selectedShip.id) {
+    if (selectedShip && fleet[f].id === selectedShip.id) {
       voyageLine.clear();
       // lock ship to view on each frame
       if (lockShip) {
-        centerView(ship.coordinates);
+        centerView(fleet[f].coordinates);
       }
-      if (!ship.setSelected) {
-        ship.setSelected = true;
-        ship.message.alpha = 0;
-        ship.statsText.alpha = 0;
-        stage.addChild(ship.message);
-        stage.addChild(ship.statsText);
+      if (!fleet[f].setSelected) {
+        fleet[f].setSelected = true;
+        fleet[f].message.alpha = 0;
+        fleet[f].statsText.alpha = 0;
+        stage.addChild(fleet[f].message);
+        stage.addChild(fleet[f].statsText);
         setTimeout(() => {
-          ship.message.alpha = 1;
-          ship.statsText.alpha = 1;
+          fleet[f].message.alpha = 1;
+          fleet[f].statsText.alpha = 1;
         }, textAlphaDelay);
       }
       if (showVoyage) {
-        voyageLine.moveTo(ship.coordinates.x, ship.coordinates.y);
-        voyageLine.lineTo(ship.destination.x, ship.destination.y);
+        voyageLine.moveTo(fleet[f].coordinates.x, fleet[f].coordinates.y);
+        voyageLine.lineTo(fleet[f].destination.x, fleet[f].destination.y);
       }
-      if (ship.scanning && ship.destinations.length > 0) {
+      if (fleet[f].scanning && fleet[f].destinations.length > 0) {
         destinationLine.clear();
-        ship.destinations.forEach(destination => {
-          destinationLine.moveTo(ship.coordinates.x, ship.coordinates.y);
+        // fleet[f].destinations.forEach(destination => {
+        for (let d = 0; d < fleet[f].destinations.length; d++) {
+          destinationLine.moveTo(
+            fleet[f].coordinates.x,
+            fleet[f].coordinates.y
+          );
           if (
             distanceAndAngleBetweenTwoPoints(
-              destination.x,
-              destination.y,
-              ship.currentScan.coordinates.x,
-              ship.currentScan.coordinates.y
-            ).distance <= ship.currentScan.scanRadius
+              fleet[f].destinations[d].x,
+              fleet[f].destinations[d].y,
+              fleet[f].currentScan.coordinates.x,
+              fleet[f].currentScan.coordinates.y
+            ).distance <= fleet[f].currentScan.scanRadius
           ) {
-            destinationLine.lineTo(destination.x, destination.y);
+            destinationLine.lineTo(
+              fleet[f].destinations[d].x,
+              fleet[f].destinations[d].y
+            );
           }
-        });
+        }
       }
 
       if (displayStats) {
-        ship.statsText.visible = true;
-        ship.message.visible = true;
+        fleet[f].statsText.visible = true;
+        fleet[f].message.visible = true;
 
         // update ship message position and add to stage
-        const nameOffset = ship.message.width + 26;
+        const nameOffset = fleet[f].message.width + 26;
         let nameStartY = newShipY - 4.5;
-        if (newShipY <= ship.message.height + 5) {
-          nameStartY = ship.message.height;
+        if (newShipY <= fleet[f].message.height + 5) {
+          nameStartY = fleet[f].message.height;
         }
         if (newShipY > gamesize.height - 14) {
           nameStartY = gamesize.height - 10;
         }
         let nameStartX =
-          ship.directionX === "east" ? newShipX - nameOffset : newShipX + 26;
+          fleet[f].directionX === "east"
+            ? newShipX - nameOffset
+            : newShipX + 26;
         if (newShipX > gamesize.width - (nameOffset + 10)) {
           nameStartX = newShipX - nameOffset;
         }
@@ -225,42 +232,43 @@ function play(deltaTime) {
         let textStartX = newShipX - 20;
         // ADJUST DISPLAY Y
         if (
-          (ship.directionY === "north" ||
-            newShipY < ship.statsText.height * 1.75) &&
-          newShipY < gamesize.height - ship.statsText.height * 1.75
+          (fleet[f].directionY === "north" ||
+            newShipY < fleet[f].statsText.height * 1.75) &&
+          newShipY < gamesize.height - fleet[f].statsText.height * 1.75
         ) {
           textStartY = newShipY + 20 + 7;
         } else {
-          textStartY = newShipY - 20 - ship.statsText.height - 5;
+          textStartY = newShipY - 20 - fleet[f].statsText.height - 5;
         }
         // ADJUST DISPLAY X
-        if (newShipX >= gamesize.width - (ship.statsText.width - 10)) {
-          textStartX = gamesize.width - ship.statsText.width - 10;
+        if (newShipX >= gamesize.width - (fleet[f].statsText.width - 10)) {
+          textStartX = gamesize.width - fleet[f].statsText.width - 10;
         }
         if (newShipX <= 30) {
           textStartX = 10;
         }
-        ship.statsText.text = `ETA: ${convertTime(
-          Math.floor(ship.distanceToDestination / (ship.velocity * 60))
-        )}\nDIST: ${renderDistance(ship.distanceToDestination)}\nDEST: ${
-          ship.destination.name
-        }\nVEL: ${renderVelocity(ship.velocity)}`;
-        ship.statsText.position.set(textStartX, textStartY);
-        ship.message.position.set(nameStartX, nameStartY);
+        fleet[f].statsText.text = `ETA: ${convertTime(
+          Math.floor(fleet[f].distanceToDestination / (fleet[f].velocity * 60))
+        )}\nDIST: ${renderDistance(fleet[f].distanceToDestination)}\nDEST: ${
+          fleet[f].destination.name
+        }\nVEL: ${renderVelocity(fleet[f].velocity)}`;
+        fleet[f].statsText.position.set(textStartX, textStartY);
+        fleet[f].message.position.set(nameStartX, nameStartY);
       } else {
-        ship.statsText.visible = false;
-        ship.message.visible = false;
+        fleet[f].statsText.visible = false;
+        fleet[f].message.visible = false;
       }
     } else {
-      if (ship.setSelected) {
+      if (fleet[f].setSelected) {
         destinationLine.clear();
         voyageLine.clear();
-        ship.setSelected = false;
-        stage.removeChild(ship.message);
-        stage.removeChild(ship.statsText);
+        fleet[f].setSelected = false;
+        stage.removeChild(fleet[f].message);
+        stage.removeChild(fleet[f].statsText);
       }
     }
-  });
+  }
+  // });
   if (selectedShip && proxShip) {
     if (
       distanceAndAngleBetweenTwoPoints(
