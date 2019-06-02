@@ -23,7 +23,7 @@ const textAlphaDelay = 20;
 /********** MUSIC **********/
 let canplay = false;
 let currentTrack;
-const enableMusic = false;
+const enableMusic = true;
 let maxVolume = 0.3;
 /********** MUSIC **********/
 
