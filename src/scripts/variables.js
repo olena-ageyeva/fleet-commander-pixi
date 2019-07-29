@@ -34,7 +34,7 @@ const cSpeed = 10000;
 let displayStats = true;
 let fleet; // array: all ships
 const fleetMap = {};
-const fleetSize = 1; // int: size of initial fleet array
+const fleetSize = 100; // int: size of initial fleet array
 const mouseProximity = 10; // int: mouse proximity for ship selection
 let selectedShip; // object: refernce to selected ship
 const shipRange = 2 * pixelsPerLightYear;
@@ -54,7 +54,7 @@ let universeMap = {}; // object of all stars for proximity calc without the need
 
 /********** UI **********/
 let mouse; // object: mouse position. {x, y}
-const skipAnimation = true;
+const skipAnimation = false;
 /********** UI **********/
 
 /********** FPS **********/
